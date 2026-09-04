@@ -100,25 +100,25 @@ const REDUCED=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: red
 if(!window.THREE){document.getElementById('loading').textContent="3D failed to load.";return;}
 const T=THREE;
 const PORTFOLIO=[
-  {id:1,name:"Apple",tk:"AAPL",kls:"Blue-chip",fam:"TREE",arch:"bluechip",value:42000,pnl:1.1,div:0.5,x:-11,z:-1},
-  {id:2,name:"Coca-Cola",tk:"KO",kls:"Dividend aristocrat",fam:"TREE",arch:"dividend",value:24000,pnl:0.4,div:3.1,x:-8,z:4},
-  {id:3,name:"NVIDIA",tk:"NVDA",kls:"Growth",fam:"TREE",arch:"growth",value:31000,pnl:2.6,div:0,x:-12,z:-6},
-  {id:4,name:"JPMorgan",tk:"JPM",kls:"Value · oak",fam:"TREE",arch:"value",value:18000,pnl:0.6,div:2.4,x:-6,z:-4},
-  {id:5,name:"S&P 500 ETF",tk:"VOO",kls:"Index grove",fam:"TREE",arch:"etf",value:38000,pnl:0.9,div:1.3,x:-7,z:8},
-  {id:6,name:"US Treasuries",tk:"GOVT",kls:"Bonds · conifer",fam:"CONIFER",arch:"pine",value:20000,pnl:0.1,div:4.2,x:-1,z:-14},
-  {id:7,name:"Gold",tk:"GLD",kls:"Commodity · gold",fam:"MINERAL",arch:"goldMine",value:16000,pnl:0.7,div:0,x:10,z:-11},
-  {id:8,name:"Crude Oil",tk:"USO",kls:"Commodity · energy",fam:"MINERAL",arch:"derrick",value:8000,pnl:-1.4,div:0,x:14,z:-6},
-  {id:9,name:"Silver",tk:"SLV",kls:"Commodity · silver",fam:"MINERAL",arch:"silverMine",value:6000,pnl:0.9,div:0,x:7,z:-13},
-  {id:10,name:"Bitcoin",tk:"BTC",kls:"Crypto coin",fam:"COIN",arch:"coinBTC",value:22000,pnl:3.4,div:0,x:13,z:1},
-  {id:11,name:"Ethereum",tk:"ETH",kls:"Crypto coin",fam:"COIN",arch:"coinETH",value:9000,pnl:2.1,div:3.0,x:15,z:5},
-  {id:12,name:"USD Cash·MMF",tk:"USDC",kls:"Stablecoin / cash",fam:"WATER",arch:"pond",value:11000,pnl:0,div:5.0,x:9,z:11},
-  {id:13,name:"AAPL 190 Call",tk:"AAPL C",kls:"Options",fam:"VINE",arch:"vine",value:5200,pnl:6.2,div:0,x:-13,z:4},
-  {id:14,name:"Realty Income",tk:"O",kls:"REIT · real estate",fam:"STRUCT",arch:"house",value:14000,pnl:0.5,div:5.0,x:-15,z:-3},
-  {id:15,name:"Roth IRA",tk:"IRA",kls:"Retirement · elder tree",fam:"TREE",arch:"elder",value:52000,pnl:0.8,div:1.8,x:-4,z:-11},
-  {id:16,name:"Corn Futures",tk:"CORN",kls:"Agriculture",fam:"FARM",arch:"field",value:7000,pnl:1.2,div:0,x:13,z:-14},
-  {id:17,name:"EUR/USD",tk:"FX",kls:"Forex · windmill",fam:"WIND",arch:"windmill",value:9000,pnl:-0.3,div:0,x:18,z:-3},
-  {id:18,name:"Art Fund",tk:"ART",kls:"Alternative · sculpture",fam:"ART",arch:"altart",value:12000,pnl:0.2,div:0,x:17,z:9},
-  {id:19,name:"ETH Staking",tk:"stETH",kls:"Staking · fountain",fam:"WATER",arch:"staking",value:8000,pnl:0.1,div:4.5,x:6,z:13},
+  {id:1,name:"Apple",tk:"AAPL",kls:"Blue-chip",fam:"TREE",arch:"bluechip",value:42000,pnl:1.1,div:0.5,x:-11,z:-5},
+  {id:2,name:"Coca-Cola",tk:"KO",kls:"Dividend aristocrat",fam:"TREE",arch:"dividend",value:24000,pnl:0.4,div:3.1,x:-7,z:0},
+  {id:3,name:"NVIDIA",tk:"NVDA",kls:"Growth",fam:"TREE",arch:"growth",value:31000,pnl:2.6,div:0,x:-13,z:-9},
+  {id:4,name:"JPMorgan",tk:"JPM",kls:"Value · oak",fam:"TREE",arch:"value",value:18000,pnl:0.6,div:2.4,x:-5,z:-6},
+  {id:5,name:"S&P 500 ETF",tk:"VOO",kls:"Index grove",fam:"TREE",arch:"etf",value:38000,pnl:0.9,div:1.3,x:-11,z:3},
+  {id:6,name:"US Treasuries",tk:"GOVT",kls:"Bonds · conifer",fam:"CONIFER",arch:"pine",value:20000,pnl:0.1,div:4.2,x:0,z:-15},
+  {id:7,name:"Gold",tk:"GLD",kls:"Commodity · gold",fam:"MINERAL",arch:"goldMine",value:16000,pnl:0.7,div:0,x:13,z:-9},
+  {id:8,name:"Crude Oil",tk:"USO",kls:"Commodity · energy",fam:"MINERAL",arch:"derrick",value:8000,pnl:-1.4,div:0,x:-4,z:9},
+  {id:9,name:"Silver",tk:"SLV",kls:"Commodity · silver",fam:"MINERAL",arch:"silverMine",value:6000,pnl:0.9,div:0,x:16,z:-6},
+  {id:10,name:"Bitcoin",tk:"BTC",kls:"Crypto coin",fam:"COIN",arch:"coinBTC",value:22000,pnl:3.4,div:0,x:13,z:3},
+  {id:11,name:"Ethereum",tk:"ETH",kls:"Crypto coin",fam:"COIN",arch:"coinETH",value:9000,pnl:2.1,div:3.0,x:16,z:6},
+  {id:12,name:"USD Cash·MMF",tk:"USDC",kls:"Stablecoin / cash",fam:"WATER",arch:"pond",value:11000,pnl:0,div:5.0,x:9,z:12},
+  {id:13,name:"AAPL 190 Call",tk:"AAPL C",kls:"Options",fam:"VINE",arch:"vine",value:5200,pnl:6.2,div:0,x:-14,z:-1},
+  {id:14,name:"Realty Income",tk:"O",kls:"REIT · real estate",fam:"STRUCT",arch:"house",value:14000,pnl:0.5,div:5.0,x:-9,z:13},
+  {id:15,name:"Roth IRA",tk:"IRA",kls:"Retirement · elder tree",fam:"TREE",arch:"elder",value:52000,pnl:0.8,div:1.8,x:4,z:-14},
+  {id:16,name:"Corn Futures",tk:"CORN",kls:"Agriculture",fam:"FARM",arch:"field",value:7000,pnl:1.2,div:0,x:12,z:11},
+  {id:17,name:"EUR/USD",tk:"FX",kls:"Forex · windmill",fam:"WIND",arch:"windmill",value:9000,pnl:-0.3,div:0,x:-13,z:8},
+  {id:18,name:"Art Fund",tk:"ART",kls:"Alternative · sculpture",fam:"ART",arch:"altart",value:12000,pnl:0.2,div:0,x:1,z:7},
+  {id:19,name:"ETH Staking",tk:"stETH",kls:"Staking · fountain",fam:"WATER",arch:"staking",value:8000,pnl:0.1,div:4.5,x:6,z:10},
 ];
 const ZONES=[{name:"Equity Orchard",x:-9,y:8,z:1},{name:"Conifer Ridge",x:-1,y:7,z:-14},{name:"Mineral Quarry",x:9,y:6,z:-11},{name:"Coin Vault",x:14,y:8,z:3},{name:"Water Gardens",x:9,y:5,z:11},{name:"SeedCoin Heart",x:0,y:6,z:0}];
 const CODEX=[["TREES · equities (real Kenney models)",[["🌳 Fat tree","Blue-chip — full canopy"],["🍁 Autumn tree","Growth — seasonal"],["🌳 Oak + fruit","Dividend — bears fruit"],["🌲 Detailed tree","Value"],["🌲🌲 Small trees","Index / ETF grove"]]],["CONIFERS · bonds",[["🌲 Pine","Fixed income"]]],["COINS · crypto",[["🪙 ₿ coin","Bitcoin — spins, glows with volatility"],["🪙 Ξ coin","Ethereum"]]],["MINERALS · commodities",[["⛏️ Gold / silver mine","with bar"],["🛢️ Oil derrick","rocking pump"]]],["WATER · cash",[["🪷 Pond + lilies","cash / stablecoin"],["💵 Bills","uninvested cash"]]],["THE HEART",[["🌱 SeedCoin","grows, glows, ripens, morphs"]]]];
@@ -248,7 +248,7 @@ function toast(m,seed){const t=document.getElementById('toast');t.innerHTML=seed
 const plants=[];const props=[];let TOTAL=PORTFOLIO.reduce((s,p)=>s+p.value,0);
 const ASSET_META={maple:['Blue-chip stock','Equity',40000],sakura:['Growth stock','Equity',30000],currant:['Dividend stock','Equity',24000],pine:['Bond fund','Fixed income',20000],elder:['Retirement account','Retirement',52000],btc:['Bitcoin','Crypto',22000],eth:['Ethereum','Crypto',9000],goldbar:['Gold','Commodity',16000],silverbar:['Silver','Commodity',6000],oil:['Oil / energy','Commodity',8000],house:['Real estate · REIT','Real estate',14000],windmill:['Forex','Currency',9000],fountain:['Staking','Yield',8000],field:['Agriculture','Commodity',7000],statue1:['Art fund','Alternative',12000],statue2:['Art fund','Alternative',12000],flowerR:['Accent','Decor',0],flowerP:['Accent','Decor',0],flowerY:['Accent','Decor',0],bush:['Shrub','Decor',0],grass:['Grass','Decor',0],lily:['Lily pad','Decor',0],rock:['Stone','Decor',0],fencerow:['Fence','Decor',0],fence:['Fence','Decor',0]};
 function metaFor(k){return ASSET_META[k]||['Element','Decor',0];}
-const LKEY='wg_layout_v1';let saveT=null;
+const LKEY='wg_layout_v2';let saveT=null;
 function serialize(){const a=[];plants.forEach(p=>a.push({t:'p',arch:p.arch,fam:p.fam,name:p.name,tk:p.tk,kls:p.kls,value:p.value,div:p.div||0,pnl:p.dayMove||0,x:+p.pivot.position.x.toFixed(2),z:+p.pivot.position.z.toFixed(2),ry:+p.pivot.rotation.y.toFixed(3),sz:+(p.size||1).toFixed(3)}));props.forEach(p=>a.push({t:'a',key:p.name,label:p.label||'',kls:p.kls||'',value:p.value||0,x:+p.pivot.position.x.toFixed(2),z:+p.pivot.position.z.toFixed(2),ry:+p.pivot.rotation.y.toFixed(3),sc:+p.grp.scale.x.toFixed(3)}));return a;}
 function saveLayout(){try{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(LKEY,JSON.stringify(serialize()));}catch(e){}},450);}catch(e){}}
 function loadLayout(){try{const s=localStorage.getItem(LKEY);return s?JSON.parse(s):null;}catch(e){return null;}}
@@ -379,9 +379,14 @@ Promise.all(keys.map(parse)).then(()=>{
   }catch(err){console.warn('layout restore failed',err);usedSaved=false;plants.length=0;props.length=0;}}
   if(!usedSaved){
     PORTFOLIO.forEach(d=>{const p=makePlant(d,d.x,d.z);p.grp.scale.setScalar(0.001);zoneCount[d.fam]=(zoneCount[d.fam]||0)+1;});
-    ['flowerR','flowerP','flowerY','bush','grass'].forEach(k=>{for(let i=0;i<10;i++){const a=RNG()*6.28,rr=6+RNG()*(R-8);addProp(k,k==='bush'?1.4:0.7,Math.cos(a)*rr,Math.sin(a)*rr,RNG()*6);}});
-    for(let i=0;i<5;i++){const a=RNG()*6.28,rr=7+RNG()*(R-10);addProp('rock',1+RNG()*0.9,Math.cos(a)*rr,Math.sin(a)*rr,RNG()*6);}
-    addFenceRow(-9,5,8,0);addFenceRow(11,-10,7,0);addFenceRow(14,6,7,Math.PI/2);
+    // reconstruction of the arranged view: dense conifer ridge, metals in the quarry, derricks & fences
+    [[-5,-16],[-2,-17],[2,-16],[6,-15],[-7,-14],[-3,-13],[8,-13],[9,-11],[5,-12]].forEach(p=>addProp('pine',6+RNG()*0.8,p[0],p[1],RNG()*6));
+    [[14,-11],[16,-8]].forEach(p=>addProp('goldbar',1,p[0],p[1],RNG()*6));
+    [[11,-3],[15,-3],[13,0]].forEach(p=>addProp('silverbar',1,p[0],p[1],RNG()*6));
+    [[-6,11],[-1,11]].forEach(p=>addProp('oil',1.8,p[0],p[1],RNG()*6));
+    addFenceRow(5,-4,12,Math.PI*0.28);addFenceRow(-3,5,9,0.1);addFenceRow(9,8,7,Math.PI/2);
+    [[-16,-3],[-15,2],[3,14],[8,4],[-2,3],[13,8]].forEach(p=>addProp('bush',1.3,p[0],p[1],RNG()*6));
+    ['flowerR','flowerP','flowerY'].forEach(k=>{for(let i=0;i<4;i++){const a=RNG()*6.28,rr=6+RNG()*11;addProp(k,0.7,Math.cos(a)*rr,Math.sin(a)*rr,RNG()*6);}});
   }
   (function pollinators(){if(!MODELS.butterflies)return;for(let i=0;i<4;i++){const m=inst('butterflies',0.9);if(m){m.group.userData.orbit=RNG()*6.28;m.group.userData.rad=4+RNG()*9;m.group.userData.h=2.5+RNG()*3;polInst.push(m.group);scene.add(m.group);}}})();
   rebuildCash(0);applyMarket(1.0,false);addSeed(12,null);document.getElementById('seedcount').innerHTML='12 <span style="font-size:13px;color:var(--seed)" class="mono">SEED</span>';updateStats();document.getElementById('loading').style.display='none';requestAnimationFrame(tick);
