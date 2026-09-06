@@ -111,31 +111,34 @@ function buildRiver(){
   const mat=new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:waterU,
     vertexShader:`attribute float steep;attribute float flowv;uniform float t;uniform float flow;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;
       void main(){vu=uv;vs=steep;vf=flowv;float ft=t*flow;vec3 pos=position;
-      float h=sin(dot(position.xz,vec2(0.9,0.3))+ft*2.0)+0.7*sin(dot(position.xz,vec2(-0.4,1.1))-ft*1.6);
-      pos.y+=(1.0-vs)*h*0.11;
+      float h=sin(dot(position.xz,vec2(0.8,0.35))+ft*1.8)+0.6*sin(dot(position.xz,vec2(-0.5,1.0))-ft*1.4);
+      pos.y+=(1.0-vs)*h*0.07;
       vec4 world=modelMatrix*vec4(pos,1.0);wp=world.xyz;gl_Position=projectionMatrix*viewMatrix*world;}`,
     fragmentShader:`uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;
-      void main(){float ft=t*flow;vec2 P=wp.xz;
-      float a1=dot(P,vec2(0.9,0.3))+ft*2.0,a2=dot(P,vec2(-0.4,1.1))-ft*1.6,a3=dot(P,vec2(1.3,-0.7))+ft*2.6;
-      float h=sin(a1)+0.7*sin(a2)+0.5*sin(a3);
-      float dhx=0.9*cos(a1)-0.28*cos(a2)+0.65*cos(a3);
-      float dhz=0.3*cos(a1)+0.77*cos(a2)-0.35*cos(a3);
-      vec3 Nn=normalize(vec3(-dhx*0.4,1.0,-dhz*0.4));
-      vec3 Vv=normalize(cameraPosition-wp);vec3 Ll=normalize(vec3(-0.4,0.92,0.3));
-      float fres=pow(1.0-max(dot(Nn,Vv),0.0),3.0);
-      float edgeF=1.0-min(vu.x,1.0-vu.x)*2.0;
-      vec3 deep=cA*0.5;vec3 shallow=mix(cA,vec3(0.6,0.86,0.85),0.55);
-      vec3 base=mix(deep,shallow,clamp(edgeF*0.85+0.1,0.0,1.0));
-      vec3 sky=vec3(0.72,0.86,1.0);
-      vec3 col=mix(base,sky,fres*0.55);
-      float spec=pow(max(dot(reflect(-Ll,Nn),Vv),0.0),80.0);col+=spec*1.3;
-      float sheen=smoothstep(0.72,1.0,sin(abs(vf)*0.7-ft*2.0+h*1.4))*0.12;col+=sheen*(1.0-vs);
-      float bank=smoothstep(0.10,0.0,min(vu.x,1.0-vu.x));bank*=0.55+0.45*sin(vf*1.8+ft*3.0);
-      col=mix(col,vec3(1.0),bank*0.6*(1.0-vs));
-      float bands=fract(abs(vf)*0.4-ft*(0.8+vs*2.6));
-      float ww=vs*(smoothstep(0.55,1.0,bands)*0.8+smoothstep(0.6,1.0,fract(vu.x*10.0))*0.25);
-      col=mix(col,vec3(1.0),ww);
-      float alpha=clamp(0.8+fres*0.2+bank*0.3+ww*0.5,0.0,1.0);
+      void main(){float ft=t*flow;float aw=abs(vf);
+      float edgeF=1.0-min(vu.x,1.0-vu.x)*2.0;              // 0 centre .. 1 banks
+      vec3 deep=cA*0.42;vec3 mid=cA*0.9;vec3 shallow=mix(cA,vec3(0.42,0.80,0.80),0.5);
+      vec3 col=mix(deep,mid,clamp(edgeF*1.1,0.0,1.0));
+      col=mix(col,shallow,smoothstep(0.65,1.0,edgeF));
+      // downstream flow: streamlines running along the river, sliding toward the edges
+      float flow1=sin(aw*0.7 - ft*2.0 + sin(vu.x*9.0)*1.4);
+      float flow2=sin(aw*1.25 - ft*3.0 + vu.x*13.0);
+      float rip=flow1*0.6+flow2*0.4;                        // -1..1
+      col+=rip*0.05;
+      col=mix(col,vec3(0.85,0.95,1.0),smoothstep(0.86,1.0,rip)*0.45*(1.0-vs)); // bright ripple crests
+      // subtle grazing-angle sky lightening (kept low so it doesn't bleach)
+      vec3 Vv=normalize(cameraPosition-wp);float fres=pow(1.0-clamp(Vv.y,0.0,1.0),4.0);
+      col=mix(col,vec3(0.66,0.82,0.98),fres*0.22*(1.0-vs));
+      // small moving sun glint
+      float glint=pow(max(sin(aw*2.2 - ft*4.0 + vu.x*4.0),0.0),40.0)*(1.0-vs);col+=glint*0.5;
+      // bank foam (soft, wobbling)
+      float bank=smoothstep(0.09,0.0,min(vu.x,1.0-vu.x));
+      col=mix(col,vec3(1.0),bank*(0.45+0.35*sin(aw*2.0+ft*3.0))*(1.0-vs));
+      // waterfall: vertical streaks + fast downstream foam bands
+      float streak=smoothstep(0.55,1.0,fract(vu.x*12.0));
+      float wband=smoothstep(0.5,1.0,fract(aw*0.45 - ft*(1.0+flow*0.2)*3.0));
+      col=mix(col,vec3(1.0),vs*(streak*0.35+wband*0.75));
+      float alpha=clamp(0.9+bank*0.1+vs*0.06,0.0,1.0);
       gl_FragColor=vec4(col,alpha);}`});
   const mesh=new T.Mesh(g,mat);mesh.name='RiverRibbon';mesh.renderOrder=2;islandRoot.add(mesh);return mesh;}
 const fruitMat=new T.MeshStandardMaterial({color:0xE0483A,roughness:.5,emissive:0x330a06,emissiveIntensity:.25});
