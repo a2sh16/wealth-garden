@@ -82,7 +82,7 @@ const birds=[];const bm=new T.LineBasicMaterial({color:0x223038});for(let i=0;i<
 const waterU={t:{value:0},flow:{value:1.3},cA:{value:new T.Color(0x2f8fd4)},cB:{value:new T.Color(0x9fe0f0)}};
 function makeWater(){return new T.ShaderMaterial({transparent:true,uniforms:waterU,vertexShader:'varying vec3 wp;void main(){wp=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec3 wp;void main(){float w=sin(wp.x*.5+t*flow)*.5+sin(wp.z*.7-t*flow*1.3)*.5;float f=smoothstep(-.2,1.,w);vec3 c=mix(cA,cB,f*.7);float sp=smoothstep(.85,1.,sin(wp.x*2.5+t*flow*3.)*sin(wp.z*2.7-t*flow*2.));c+=sp*.5;gl_FragColor=vec4(c,.9);}'});}
 const fallU={t:{value:0},flow:{value:1.3}};
-function makeFall(){return new T.ShaderMaterial({transparent:true,uniforms:fallU,vertexShader:'varying vec2 vu;void main(){vu=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float t;uniform float flow;varying vec2 vu;void main(){float s=fract(vu.y*3.-t*flow*1.5);float foam=smoothstep(.7,1.,s)+.4;vec3 c=mix(vec3(.45,.72,.9),vec3(1.),foam*.6);gl_FragColor=vec4(c,.8);}'});}
+function makeFall(){return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:fallU,vertexShader:'varying vec2 vu;void main(){vu=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float t;uniform float flow;varying vec2 vu;void main(){float s=fract(vu.y*3.-t*flow*1.5);float foam=smoothstep(.7,1.,s)+.4;vec3 c=mix(vec3(.45,.72,.9),vec3(1.),foam*.6);float a=.85*smoothstep(0.,.18,vu.y)*smoothstep(0.,.22,1.-vu.y);gl_FragColor=vec4(c,a);}'});}
 
 const holds=[];const sways=[];const coins=[];const mines=[];let islandRoot=null,topY=0;
 const terrainMeshes=[];const _dray=new T.Raycaster();const _dv=new T.Vector3(0,-1,0);
@@ -114,6 +114,10 @@ loader.load('island.glb',(gltf)=>{
   islandRoot.updateMatrixWorld(true);
   const holdSet=new Set();holds.forEach(h=>h.traverse(k=>holdSet.add(k)));
   islandRoot.traverse(o=>{if(o.isMesh&&!holdSet.has(o)&&!/water/i.test(o.name)&&!(o.material&&/Falls/i.test(o.material.name||'')))terrainMeshes.push(o);});
+  // adopt loose barrels (untagged cluster-mates) into the energy holdings so they ground + move together
+  const energyH=holds.filter(h=>h.userData.wg_fam==='energy');
+  if(energyH.length){const strayB=[];islandRoot.traverse(o=>{if(/^Barrel/i.test(o.name||'')&&!holdSet.has(o))strayB.push(o);});
+    const cnt=new Map();strayB.forEach((b,i)=>{const e=energyH[i%energyH.length];e.updateWorldMatrix(true,true);const n=cnt.get(e)||0;cnt.set(e,n+1);const ang=n*2.4+0.8;const tw=e.getWorldPosition(new T.Vector3()).add(new T.Vector3(Math.cos(ang)*2.2,0,Math.sin(ang)*2.2));e.attach(b);b.position.copy(e.worldToLocal(tw.clone()));b.updateWorldMatrix(true,true);});}
   holds.forEach(snapBase);
   buildList();setMarket('fair');
   const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',700);
@@ -138,6 +142,7 @@ function buildList(){lb.innerHTML='';const byF={};let nw=0;holds.forEach(o=>{con
  document.getElementById('nw').textContent=fmt(nw);document.getElementById('hc').textContent=holds.length;
  Object.keys(FAM).forEach(f=>{const its=(byF[f]||[]).sort((a,b)=>(+b.userData.wg_val)-(+a.userData.wg_val));if(!its.length)return;const sum=its.reduce((s,o)=>s+(+o.userData.wg_val||0),0);
   const g=document.createElement('div');g.innerHTML='<div class="gh"><span class="sw" style="background:'+FAM[f][1]+'"></span>'+FAM[f][0]+'<b>'+fmt(sum)+'</b></div>';
+  const ghEl=g.firstElementChild;ghEl.title='Edit mode: click to select all '+FAM[f][0].toLowerCase()+' (shift-click adds another group)';ghEl.onclick=(ev)=>{if(!editMode)return;ev.stopPropagation();if(!ev.shiftKey)clearSel();its.forEach(o=>{if(!sel.has(o)){sel.add(o);addBox(o);}});setHint('Selected '+sel.size+' holdings — drag / arrows to move · [ ] rotate');};
   its.forEach(o=>{const d=o.userData.day||0;const r=document.createElement('div');r.className='row';r.innerHTML='<span>'+o.userData.wg_name+'</span><span class="v">'+fmt(+o.userData.wg_val)+'<span class="d '+(d>=0?'up':'down')+'">'+(d>=0?'+':'')+d.toFixed(1)+'%</span></span>';
    r.onmouseenter=()=>{hoverObj=o;};r.onmouseleave=()=>{hoverObj=null;hideCard();};r.onclick=()=>{if(editMode)selectOnly(o);else focusOn(o);};g.appendChild(r);});
   lb.appendChild(g);});}
@@ -195,7 +200,7 @@ addEventListener('pointerup',e=>{if(dragging){dragging=false;controls.enabled=tr
 // toolbar
 const tE=document.getElementById('tEdit');
 function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset'].forEach(id=>document.getElementById(id).style.display=v?'':'none');}
-tE.onclick=()=>{editMode=!editMode;tE.classList.toggle('on',editMode);showEditTools(editMode);controls.autoRotate=editMode?false:!REDUCED;hideCard();if(!editMode){clearSel();clearZone();drawMode=false;document.getElementById('tZone').classList.remove('on');setHint('<b>Drag</b> orbit · <b>click</b> a holding to focus');}else setHint('<b>Click</b> or a <b>list row</b> to select (shift=add) · <b>drag</b> or <b>arrow keys</b> to move · <b>[ ]</b> rotate · <b>Draw zone</b> → <b>Fill</b>');};
+tE.onclick=()=>{editMode=!editMode;tE.classList.toggle('on',editMode);showEditTools(editMode);controls.autoRotate=editMode?false:!REDUCED;hideCard();if(!editMode){clearSel();clearZone();drawMode=false;document.getElementById('tZone').classList.remove('on');setHint('<b>Drag</b> orbit · <b>click</b> a holding to focus');}else setHint('<b>Click</b> a holding or a <b>list group header</b> to select all of a type · <b>drag</b>/<b>arrows</b> move · <b>[ ]</b> rotate · <b>Draw zone</b> → <b>Fill</b>');};
 document.getElementById('tZone').onclick=(ev)=>{drawMode=!drawMode;ev.target.classList.toggle('on',drawMode);if(drawMode){clearZone();setHint('Click points on the ground to outline a zone, then Fill');}};
 document.getElementById('tFill').onclick=fillZone;
 document.getElementById('tClear').onclick=()=>{clearZone();setHint('Zone cleared');};
