@@ -36,7 +36,7 @@
 <div class="bar">
  <div class="seg" id="market"></div>
  <div class="seg" id="tools">
-   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="12" max="24" step="0.2" style="width:96px;vertical-align:middle"></span>
+   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="16" max="27" step="0.2" style="width:96px;vertical-align:middle"></span>
  </div>
 </div>
 <aside class="list"><h2>Holdings</h2><div id="lb"></div></aside>
@@ -90,7 +90,7 @@ const holds=[];const sways=[];const coins=[];const mines=[];let islandRoot=null,
 const terrainMeshes=[];const _dray=new T.Raycaster();const _dv=new T.Vector3(0,-1,0);
 function surfaceY(x,z){_dray.set(new T.Vector3(x,topY+80,z),_dv);const h=_dray.intersectObjects(terrainMeshes,false);return h.length?h[0].point.y:topY;}
 function snapBase(o){o.updateWorldMatrix(true,true);const wp=o.getWorldPosition(new T.Vector3());const sy=surfaceY(wp.x,wp.z);const bb=new T.Box3().setFromObject(o);if(!isFinite(bb.min.y))return;let delta=sy-bb.min.y;if(o.userData.wg_fam==='crypto')delta+=3.4;const ps=(o.parent||o).getWorldScale(new T.Vector3());o.position.y+=delta/(ps.y||1);o.updateWorldMatrix(true,true);}
-let CLIPR=21.8;try{const _v=parseFloat(localStorage.getItem('wg_clipr'));if(_v>0)CLIPR=_v;}catch(e){}
+let CLIPR=22.5;try{const _v=parseFloat(localStorage.getItem('wg_clipr'));if(_v>0)CLIPR=_v;}catch(e){}
 const clipUniforms=[];
 function addRadialClip(mesh,keepBelow){const m=mesh.material;if(!m)return;m.onBeforeCompile=(sh)=>{const u={value:CLIPR};sh.uniforms.uClipR=u;clipUniforms.push(u);
   sh.vertexShader='varying vec3 vWPc;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvWPc=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -98,6 +98,35 @@ function addRadialClip(mesh,keepBelow){const m=mesh.material;if(!m)return;m.onBe
   sh.fragmentShader='varying vec3 vWPc;uniform float uClipR;\n'+sh.fragmentShader.replace('void main() {','void main() {\nif('+cond+'length(vWPc.xz)>uClipR)discard;');
  };m.needsUpdate=true;}
 function setClip(r){CLIPR=r;clipUniforms.forEach(u=>u.value=r);try{localStorage.setItem('wg_clipr',String(r));}catch(e){}}
+// fills the artist's carved channel mesh (RiverWater) with stylised flowing water; clipped to the island circle
+function makeChannelWater(){const u=Object.assign({uClipR:{value:CLIPR}},waterU);clipUniforms.push(u.uClipR);
+  return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:u,
+   vertexShader:`uniform float t;uniform float flow;varying vec3 wp;void main(){float ft=t*flow;vec3 p=position;
+     float h=sin(dot(position.xz,vec2(0.7,0.4))+ft*1.8)+0.6*sin(dot(position.xz,vec2(-0.5,0.9))-ft*1.5);
+     p.y+=h*0.06;vec4 w=modelMatrix*vec4(p,1.0);wp=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+   fragmentShader:`uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;uniform float uClipR;varying vec3 wp;
+     void main(){if(length(wp.xz)>uClipR)discard;float ft=t*flow;vec2 P=wp.xz;
+     float a1=dot(P,vec2(0.7,0.4))+ft*1.8,a2=dot(P,vec2(-0.5,0.9))-ft*1.5,a3=dot(P,vec2(1.2,-0.6))+ft*2.4;
+     float h=sin(a1)+0.7*sin(a2)+0.5*sin(a3);
+     float dhx=0.7*cos(a1)-0.35*cos(a2)+0.6*cos(a3);float dhz=0.4*cos(a1)+0.63*cos(a2)-0.3*cos(a3);
+     vec3 Nn=normalize(vec3(-dhx*0.35,1.0,-dhz*0.35));
+     vec3 Vv=normalize(cameraPosition-wp);vec3 Ll=normalize(vec3(-0.4,0.9,0.3));
+     vec3 deep=cA*0.5;vec3 mid=cA*0.95;
+     vec3 col=mix(deep,mid,clamp(0.5+h*0.28,0.0,1.0));
+     float spec=pow(max(dot(reflect(-Ll,Nn),Vv),0.0),64.0);col+=spec*1.2;
+     float glint=pow(max(sin(P.x*1.6+P.y*1.3-ft*3.0),0.0),50.0)*0.5;col+=glint;
+     float fres=pow(1.0-clamp(Vv.y,0.0,1.0),4.0);col=mix(col,vec3(0.68,0.83,0.98),fres*0.24);
+     gl_FragColor=vec4(col,0.9);}`});}
+// water on the fall planes at the channel mouths
+function makeChannelFall(){return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:waterU,
+   vertexShader:`varying vec2 vu;void main(){vu=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+   fragmentShader:`uniform float t;uniform float flow;uniform vec3 cA;varying vec2 vu;
+     void main(){float ft=t*flow;float streak=0.55+0.45*sin(vu.x*44.0);
+     float fp=fract(vu.y*3.0-ft*2.4);float foam=smoothstep(0.5,1.0,fp);
+     vec3 base=mix(cA*0.85,vec3(1.0),0.35);
+     vec3 col=mix(base,vec3(1.0),foam*0.6*streak+0.12);
+     float a=0.85*smoothstep(0.0,0.14,vu.y)*smoothstep(0.0,0.22,1.0-vu.y);
+     gl_FragColor=vec4(col,a);}`});}
 function buildRiver(){
   const R=21.8, Y=-0.22, COLS=34, FALLH=15, FROWS=18, DROWS=90, XIN=19;
   // roughly-straight path along X, but with ORGANIC banks: gentle centre wander + independent left/right edge wobble
@@ -161,10 +190,10 @@ loader.load('island.glb',(gltf)=>{
   controls.target.set(ctr.x,ctr.y+size.y*0.13,ctr.z);
   islandRoot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material.side=T.FrontSide;}
     if(/IslandTop/i.test(o.name)){topY=new T.Box3().setFromObject(o).max.y;}
-    if(/RiverWater/i.test(o.name)&&o.isMesh){o.visible=false;return;}
+    if(/RiverWater/i.test(o.name)&&o.isMesh){o.material=makeChannelWater();o.renderOrder=2;return;}
     if(/RiverMud/i.test(o.name)&&o.isMesh){o.material=o.material.clone();addRadialClip(o,null);return;}
     if(/fountain_water/i.test(o.name)&&o.isMesh){o.material=makeWater();return;}
-    if(o.isMesh&&o.material&&/Falls/i.test(o.material.name||'')){o.visible=false;}});
+    if(o.isMesh&&o.material&&/Falls/i.test(o.material.name||'')){o.material=makeChannelFall();}});
   islandRoot.traverse(o=>{if(o.userData&&o.userData.wg_name)holds.push(o);});
   // parent metal ore spheres to nearest metal rock so they follow drags
   const ores=[];islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||''))ores.push(o);});
@@ -185,7 +214,6 @@ loader.load('island.glb',(gltf)=>{
   if(energyH.length){const strayB=[];islandRoot.traverse(o=>{if(/^Barrel/i.test(o.name||'')&&!holdSet.has(o))strayB.push(o);});
     const cnt=new Map();strayB.forEach((b,i)=>{const e=energyH[i%energyH.length];e.updateWorldMatrix(true,true);const n=cnt.get(e)||0;cnt.set(e,n+1);const ang=n*2.4+0.8;const tw=e.getWorldPosition(new T.Vector3()).add(new T.Vector3(Math.cos(ang)*2.2,0,Math.sin(ang)*2.2));e.attach(b);b.position.copy(e.worldToLocal(tw.clone()));b.updateWorldMatrix(true,true);});}
   holds.forEach(snapBase);
-  buildRiver();
   buildList();setMarket('fair');
   try{renderer.compile(scene,camera);setClip(CLIPR);}catch(e){}
   const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',700);
