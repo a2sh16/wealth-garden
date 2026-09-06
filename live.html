@@ -29,22 +29,32 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script>
 const T=THREE;
 const FAM={stock:['Stocks','#3a9a3a'],bond:['Bonds','#1baf7a'],metal:['Metals','#eda100'],energy:['Energy','#eb6834'],crypto:['Crypto','#f0902a'],realestate:['Real estate','#8a63c9'],cash:['Cash','#2a78d6'],collectable:['Collectables','#e87ba4'],alts:['Alternatives','#e87ba4']};
 const fmt=v=>v>=1000?'$'+(v/1000).toFixed(v%1000&&v<10000?1:0)+'k':'$'+v;
 const REDUCED=matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas=document.getElementById('c');
-const renderer=new T.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
-const scene=new T.Scene();scene.fog=new T.FogExp2(0xbcd6e8,0.0042);
+const renderer=new T.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.outputEncoding=T.LinearEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+const scene=new T.Scene();scene.fog=new T.FogExp2(0xd6e6f2,0.0012);
+try{const pmrem=new T.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new T.RoomEnvironment(),0.04).texture;}catch(e){console.warn('env',e);}
 const camera=new T.PerspectiveCamera(46,innerWidth/innerHeight,0.1,2000);
 camera.position.set(46,26,46);
 const controls=new T.OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=0.06;controls.autoRotate=!REDUCED;controls.autoRotateSpeed=0.5;controls.minDistance=14;controls.maxDistance=120;controls.maxPolarAngle=Math.PI*0.52;controls.target.set(0,2,0);
 // sky dome
 const sky=new T.Mesh(new T.SphereGeometry(900,32,16),new T.ShaderMaterial({side:T.BackSide,uniforms:{top:{value:new T.Color(0x3f7fc4)},bot:{value:new T.Color(0xeaf3fb)}},vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*.5+.5;gl_FragColor=vec4(mix(bot,top,clamp(h,0.,1.)),1.);}'}));scene.add(sky);
 // lights
-const hemi=new T.HemisphereLight(0xbfd8ff,0x55704a,0.85);scene.add(hemi);
-const sun=new T.DirectionalLight(0xfff2d6,2.4);sun.position.set(-30,44,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.near=1;sun.shadow.camera.far=200;sun.shadow.camera.left=-60;sun.shadow.camera.right=60;sun.shadow.camera.top=60;sun.shadow.camera.bottom=-60;sun.shadow.bias=-0.0004;scene.add(sun);
+const hemi=new T.HemisphereLight(0xbfd8ff,0x55704a,0.7);scene.add(hemi);
+const sun=new T.DirectionalLight(0xfff2d6,2.7);sun.position.set(-30,44,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.near=1;sun.shadow.camera.far=200;sun.shadow.camera.left=-60;sun.shadow.camera.right=60;sun.shadow.camera.top=60;sun.shadow.camera.bottom=-60;sun.shadow.bias=-0.0004;scene.add(sun);
 // cloud sea
 const cloudMat=new T.MeshStandardMaterial({color:0xffffff,roughness:1,transparent:true,opacity:.9});
 const clouds=[];for(let i=0;i<70;i++){const g=new T.Group();const n=2+((Math.random()*3)|0);for(let j=0;j<n;j++){const b=new T.Mesh(new T.SphereGeometry(3+Math.random()*3,8,6),cloudMat);b.position.set((Math.random()-.5)*10,(Math.random()-.5)*2,(Math.random()-.5)*6);b.scale.y=.6;g.add(b);}const a=Math.random()*6.28,r=26+Math.random()*90;g.position.set(Math.cos(a)*r,-24-Math.random()*8,Math.sin(a)*r);g.userData.sp=.3+Math.random()*.6;clouds.push(g);scene.add(g);}
@@ -74,7 +84,7 @@ loader.load('island.glb',(gltf)=>{
     if(/water/i.test(nm)){waters.push(o);}
   });
   buildList();
-  document.getElementById('load').classList.add('hide');
+  const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',700);
 },(xhr)=>{},(err)=>{document.getElementById('load').textContent='Could not load the isle.';console.error(err);});
 
 // drips from mines
@@ -107,8 +117,14 @@ function listHover(){return false;}
 function showCard(o,x,y){const f=o.userData.wg_fam||'alts';card.innerHTML='<div class="cn">'+o.userData.wg_name+'</div><div class="cf" style="color:'+(FAM[f]?FAM[f][1]:'#ccc')+'">'+(FAM[f]?FAM[f][0]:f)+'</div><div class="cv">'+fmt(+o.userData.wg_val)+'</div>';card.style.left=Math.min(x+14,innerWidth-160)+'px';card.style.top=Math.max(8,y-8)+'px';card.classList.add('show');}
 function hideCard(){card.classList.remove('show');}
 
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 renderer.setSize(innerWidth,innerHeight);
+const composer=new T.EffectComposer(renderer);
+composer.addPass(new T.RenderPass(scene,camera));
+const bloom=new T.UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),0.16,0.5,1.0);composer.addPass(bloom);
+composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));
+const fxaa=new T.ShaderPass(T.FXAAShader);composer.addPass(fxaa);
+function setSizes(){const w=innerWidth,h=innerHeight,pr=renderer.getPixelRatio();renderer.setSize(w,h);composer.setSize(w,h);bloom.setSize(w,h);if(fxaa.material)fxaa.material.uniforms['resolution'].value.set(1/(w*pr),1/(h*pr));camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',setSizes);setSizes();
 const clock=new T.Clock();let lastAz=0,windSpin=0,dripT=0;
 function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime;
  controls.update();
@@ -129,9 +145,7 @@ function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta
   for(let i=0;i<DN;i++){const s=dstate[i];if(s.life>0){s.vy-=dt*9;s.y+=s.vy*dt;s.x+=s.vx;s.life-=dt;arr[i*3]=s.x;arr[i*3+1]=s.y;arr[i*3+2]=s.z;if(s.life<=0||s.y<-20)arr[i*3+1]=-999;}else arr[i*3+1]=-999;}
   drips.geometry.attributes.position.needsUpdate=true;
  }
- // sync list highlight
- document.querySelectorAll('.row').forEach(r=>{});
- renderer.render(scene,camera);
+ composer.render();
 }
 anim();
 </script>
