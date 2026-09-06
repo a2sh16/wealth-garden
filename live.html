@@ -109,15 +109,34 @@ function buildRiver(){
   for(let r=0;r<NR-1;r++)for(let j=0;j<COLS-1;j++){const a=r*COLS+j,b=a+1,c=a+COLS,e=c+1;idx.push(a,c,b, b,c,e);}
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(verts,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('steep',new T.Float32BufferAttribute(steeps,1));g.setAttribute('flowv',new T.Float32BufferAttribute(flowvs,1));g.setIndex(idx);g.computeVertexNormals();
   const mat=new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:waterU,
-    vertexShader:'attribute float steep;attribute float flowv;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;void main(){vu=uv;vs=steep;vf=flowv;wp=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:'uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;void main(){float ft=t*flow;float dir=sign(vf);float aw=abs(vf);\
-      float w=sin(wp.x*0.5-dir*ft*1.3)*0.5+sin(wp.z*0.7+ft*0.9)*0.5;vec3 col=mix(cA,cB,clamp(w*0.5+0.5,0.0,1.0));\
-      float bands=fract(aw*0.34-ft*(0.55+vs*2.3));float foam=smoothstep(0.6,1.0,bands)*(0.16+vs*1.0);\
-      float streak=vs*smoothstep(0.55,1.0,fract(vu.x*9.0+sin(aw*0.6)))*0.22;\
-      col=mix(col,vec3(1.0),foam+streak);\
-      float sp=smoothstep(0.86,1.0,sin(wp.x*2.3+ft*2.0)*sin(wp.z*2.5-ft*1.7))*(1.0-vs);col+=sp*0.4;\
-      float edge=1.0-smoothstep(0.0,0.13,vu.x)*smoothstep(0.0,0.13,1.0-vu.x);col=mix(col,vec3(1.0),edge*0.3);\
-      gl_FragColor=vec4(col,0.94-vs*0.06);}'});
+    vertexShader:`attribute float steep;attribute float flowv;uniform float t;uniform float flow;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;
+      void main(){vu=uv;vs=steep;vf=flowv;float ft=t*flow;vec3 pos=position;
+      float h=sin(dot(position.xz,vec2(0.9,0.3))+ft*2.0)+0.7*sin(dot(position.xz,vec2(-0.4,1.1))-ft*1.6);
+      pos.y+=(1.0-vs)*h*0.11;
+      vec4 world=modelMatrix*vec4(pos,1.0);wp=world.xyz;gl_Position=projectionMatrix*viewMatrix*world;}`,
+    fragmentShader:`uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;
+      void main(){float ft=t*flow;vec2 P=wp.xz;
+      float a1=dot(P,vec2(0.9,0.3))+ft*2.0,a2=dot(P,vec2(-0.4,1.1))-ft*1.6,a3=dot(P,vec2(1.3,-0.7))+ft*2.6;
+      float h=sin(a1)+0.7*sin(a2)+0.5*sin(a3);
+      float dhx=0.9*cos(a1)-0.28*cos(a2)+0.65*cos(a3);
+      float dhz=0.3*cos(a1)+0.77*cos(a2)-0.35*cos(a3);
+      vec3 Nn=normalize(vec3(-dhx*0.4,1.0,-dhz*0.4));
+      vec3 Vv=normalize(cameraPosition-wp);vec3 Ll=normalize(vec3(-0.4,0.92,0.3));
+      float fres=pow(1.0-max(dot(Nn,Vv),0.0),3.0);
+      float edgeF=1.0-min(vu.x,1.0-vu.x)*2.0;
+      vec3 deep=cA*0.5;vec3 shallow=mix(cA,vec3(0.6,0.86,0.85),0.55);
+      vec3 base=mix(deep,shallow,clamp(edgeF*0.85+0.1,0.0,1.0));
+      vec3 sky=vec3(0.72,0.86,1.0);
+      vec3 col=mix(base,sky,fres*0.55);
+      float spec=pow(max(dot(reflect(-Ll,Nn),Vv),0.0),80.0);col+=spec*1.3;
+      float sheen=smoothstep(0.72,1.0,sin(abs(vf)*0.7-ft*2.0+h*1.4))*0.12;col+=sheen*(1.0-vs);
+      float bank=smoothstep(0.10,0.0,min(vu.x,1.0-vu.x));bank*=0.55+0.45*sin(vf*1.8+ft*3.0);
+      col=mix(col,vec3(1.0),bank*0.6*(1.0-vs));
+      float bands=fract(abs(vf)*0.4-ft*(0.8+vs*2.6));
+      float ww=vs*(smoothstep(0.55,1.0,bands)*0.8+smoothstep(0.6,1.0,fract(vu.x*10.0))*0.25);
+      col=mix(col,vec3(1.0),ww);
+      float alpha=clamp(0.8+fres*0.2+bank*0.3+ww*0.5,0.0,1.0);
+      gl_FragColor=vec4(col,alpha);}`});
   const mesh=new T.Mesh(g,mat);mesh.name='RiverRibbon';mesh.renderOrder=2;islandRoot.add(mesh);return mesh;}
 const fruitMat=new T.MeshStandardMaterial({color:0xE0483A,roughness:.5,emissive:0x330a06,emissiveIntensity:.25});
 function addFruit(o){const box=new T.Box3().setFromObject(o);const c=box.getCenter(new T.Vector3());const sz=box.getSize(new T.Vector3());const invS=1/(o.scale.x||1);for(let i=0;i<4;i++){const a=Math.random()*6.28,rr=sz.x*0.26*Math.sqrt(Math.random());const wp=new T.Vector3(c.x+Math.cos(a)*rr,box.min.y+sz.y*(0.58+Math.random()*0.28),c.z+Math.sin(a)*rr);const m=new T.Mesh(new T.SphereGeometry(0.5,10,10),fruitMat);m.position.copy(o.worldToLocal(wp.clone()));m.scale.setScalar(invS);o.add(m);}}
