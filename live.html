@@ -103,7 +103,7 @@ loader.load('island.glb',(gltf)=>{
   // parent metal ore spheres to nearest metal rock so they follow drags
   const ores=[];islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||''))ores.push(o);});
   const metals=holds.filter(h=>h.userData.wg_fam==='metal');
-  ores.forEach(ore=>{let best=null,bd=1e9;const op=new T.Vector3();ore.getWorldPosition(op);metals.forEach(m=>{const mp=new T.Vector3();m.getWorldPosition(mp);const d=mp.distanceToSquared(op);if(d<bd){bd=d;best=m;}});if(best){const wp=ore.getWorldPosition(new T.Vector3());best.add(ore);ore.position.copy(best.worldToLocal(wp));}});
+  ores.forEach(ore=>{let best=null,bd=1e9;const op=new T.Vector3();ore.getWorldPosition(op);metals.forEach(m=>{const mp=new T.Vector3();m.getWorldPosition(mp);const d=mp.distanceToSquared(op);if(d<bd){bd=d;best=m;}});if(best){best.attach(ore);}});
   holds.forEach(o=>{const fam=o.userData.wg_fam||'alts';o.userData.beta=BETA[fam]||1;const yr=YIELDF[fam]||[0,0];o.userData.yield=+(yr[0]+hh(o.userData.wg_name)*(yr[1]-yr[0])).toFixed(1);o.userData.seed=hh(o.userData.wg_name+'x');
     o.userData._mats=[];o.userData._fol=[];o.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();o.userData._mats.push(k.material);const c=k.material.color;if(c.g>c.r*1.03&&c.g>c.b*1.03)o.userData._fol.push({m:k.material,o:c.clone()});}});
     const nm=o.name||'';const isTree=/Tree/i.test(nm)||fam==='stock';const isBush=/Bush/i.test(nm)||fam==='bond';const isCoin=/Coin/i.test(nm)||fam==='crypto'||fam==='cash';const isBuild=/building|skyscraper|Windmill|fountain/i.test(nm)||fam==='realestate';const isMine=/Resource_Rock/i.test(nm)||fam==='metal';
@@ -125,7 +125,7 @@ loader.load('island.glb',(gltf)=>{
 
 // layout persistence: fetch baked layout.json (default) then localStorage override; else de-grid jitter
 function applyLayout(){let base=null;try{base=window.__BAKED||null;}catch(e){}
-  let saved=null;try{saved=JSON.parse(localStorage.getItem('wg_layout2')||'null');}catch(e){}
+  let saved=null;try{saved=JSON.parse(localStorage.getItem('wg_layout3')||'null');}catch(e){}
   const L=saved||base;
   if(L){holds.forEach(o=>{const p=L[o.userData.wg_name];if(p){o.position.set(p[0],p[1],p[2]);if(p[3]!=null)o.rotation.y=p[3];}});}
   else{holds.forEach(o=>{if(o.userData.wg_fam==='crypto')return;o.position.x+=(hh(o.userData.wg_name+'jx')-.5)*2.4;o.position.z+=(hh(o.userData.wg_name+'jz')-.5)*2.4;if(ROTOK[o.userData.wg_fam])o.rotation.y=hh(o.userData.wg_name+'jr')*6.28;});}
@@ -160,7 +160,7 @@ const ray=new T.Raycaster(),mv=new T.Vector2();let hoverObj=null;const card=docu
 let focusTarget=null;
 const gplane=new T.Plane(new T.Vector3(0,1,0),0);
 function pickHold(x,y){mv.x=x/innerWidth*2-1;mv.y=-(y/innerHeight)*2+1;ray.setFromCamera(mv,camera);const src=islandRoot||scene;const hit=ray.intersectObject(src,true);if(hit.length){let o=hit[0].object;while(o&&!o.userData.wg_name)o=o.parent;return o||null;}return null;}
-const ROTOK={stock:1,bond:1,metal:1,energy:1};
+const ROTOK={stock:1,bond:1,energy:1};
 function groundHit(x,y){mv.x=x/innerWidth*2-1;mv.y=-(y/innerHeight)*2+1;ray.setFromCamera(mv,camera);gplane.constant=-topY;const p=new T.Vector3();ray.ray.intersectPlane(gplane,p);return p;}
 function focusOn(o){const p=new T.Vector3();new T.Box3().setFromObject(o).getCenter(p);focusTarget=p.clone();controls.autoRotate=false;}
 function showCard(o,x,y){const f=o.userData.wg_fam||'alts',d=o.userData.day||0,yd=o.userData.yield||0;card.innerHTML='<div class="cn">'+o.userData.wg_name+'</div><div class="cf" style="color:'+(FAM[f]?FAM[f][1]:'#ccc')+'">'+(FAM[f]?FAM[f][0]:f)+'</div><div class="cg"><div><div class="l">Value</div><div class="cv">'+fmt(+o.userData.wg_val)+'</div></div><div><div class="l">Today</div><div class="cv '+(d>=0?'up':'down')+'">'+(d>=0?'▲ +':'▼ ')+d.toFixed(2)+'%</div></div>'+(yd>0?'<div><div class="l">Yield</div><div class="cv">'+yd+'%</div></div>':'')+'</div>';card.style.left=Math.min(x+14,innerWidth-172)+'px';card.style.top=Math.max(8,y-8)+'px';card.classList.add('show');}
@@ -182,7 +182,7 @@ function fillZone(){if(zonePts.length<3||sel.size===0){setHint('Draw a zone (3+ 
  const items=[...sel];const placed=[];const mind=3.2;let idx=0;
  for(const o of items){let done=false;for(let tr=0;tr<400&&!done;tr++){const x=minx+Math.random()*(maxx-minx),z=minz+Math.random()*(maxz-minz);if(!pip(x,z,zonePts))continue;if(placed.some(q=>(q.x-x)**2+(q.z-z)**2<mind*mind))continue;o.position.x=x;o.position.z=z;if(ROTOK[o.userData.wg_fam])o.rotation.y=Math.random()*6.28;placed.push({x,z});done=true;}}
  items.forEach(snapBase);saveLayout();buildList();setHint('Filled zone with '+items.length+' holdings');clearZone();}
-function saveLayout(){const o={};holds.forEach(h=>o[h.userData.wg_name]=[+h.position.x.toFixed(2),+h.position.y.toFixed(2),+h.position.z.toFixed(2),+h.rotation.y.toFixed(3)]);try{localStorage.setItem('wg_layout2',JSON.stringify(o));}catch(e){}return o;}
+function saveLayout(){const o={};holds.forEach(h=>o[h.userData.wg_name]=[+h.position.x.toFixed(2),+h.position.y.toFixed(2),+h.position.z.toFixed(2),+h.rotation.y.toFixed(3)]);try{localStorage.setItem('wg_layout3',JSON.stringify(o));}catch(e){}return o;}
 function setHint(t){document.getElementById('hint').innerHTML=t;}
 // pointer handling
 let downXY=null;
@@ -205,7 +205,7 @@ document.getElementById('tZone').onclick=(ev)=>{drawMode=!drawMode;ev.target.cla
 document.getElementById('tFill').onclick=fillZone;
 document.getElementById('tClear').onclick=()=>{clearZone();setHint('Zone cleared');};
 document.getElementById('tSave').onclick=()=>{saveLayout();setHint('Layout saved in this browser');};
-document.getElementById('tReset').onclick=()=>{try{localStorage.removeItem('wg_layout2');localStorage.removeItem('wg_layout');}catch(e){}location.reload();};
+document.getElementById('tReset').onclick=()=>{try{localStorage.removeItem('wg_layout3');localStorage.removeItem('wg_layout');}catch(e){}location.reload();};
 addEventListener('keydown',e=>{if(!editMode||!sel.size)return;if(/^(input|textarea)$/i.test((e.target.tagName||'')))return;const s=e.shiftKey?2:0.5;let dx=0,dz=0,dr=0;switch(e.key){case'ArrowLeft':dx=-s;break;case'ArrowRight':dx=s;break;case'ArrowUp':dz=-s;break;case'ArrowDown':dz=s;break;case'[':dr=-0.13;break;case']':dr=0.13;break;case'{':dr=-0.03;break;case'}':dr=0.03;break;default:return;}e.preventDefault();sel.forEach(o=>{o.position.x+=dx;o.position.z+=dz;o.rotation.y+=dr;});if(dx||dz)sel.forEach(snapBase);saveLayout();});
 document.getElementById('tExport').onclick=()=>{const o=saveLayout();const txt=JSON.stringify(o);const ta=document.getElementById('expT');ta.value=txt;document.getElementById('exp').classList.add('show');try{navigator.clipboard.writeText(txt);}catch(e){}};
 document.getElementById('expClose').onclick=()=>document.getElementById('exp').classList.remove('show');
