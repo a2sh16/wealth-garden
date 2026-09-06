@@ -36,7 +36,7 @@
 <div class="bar">
  <div class="seg" id="market"></div>
  <div class="seg" id="tools">
-   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button>
+   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="12" max="24" step="0.2" style="width:96px;vertical-align:middle"></span>
  </div>
 </div>
 <aside class="list"><h2>Holdings</h2><div id="lb"></div></aside>
@@ -90,6 +90,14 @@ const holds=[];const sways=[];const coins=[];const mines=[];let islandRoot=null,
 const terrainMeshes=[];const _dray=new T.Raycaster();const _dv=new T.Vector3(0,-1,0);
 function surfaceY(x,z){_dray.set(new T.Vector3(x,topY+80,z),_dv);const h=_dray.intersectObjects(terrainMeshes,false);return h.length?h[0].point.y:topY;}
 function snapBase(o){o.updateWorldMatrix(true,true);const wp=o.getWorldPosition(new T.Vector3());const sy=surfaceY(wp.x,wp.z);const bb=new T.Box3().setFromObject(o);if(!isFinite(bb.min.y))return;let delta=sy-bb.min.y;if(o.userData.wg_fam==='crypto')delta+=3.4;const ps=(o.parent||o).getWorldScale(new T.Vector3());o.position.y+=delta/(ps.y||1);o.updateWorldMatrix(true,true);}
+let CLIPR=21.8;try{const _v=parseFloat(localStorage.getItem('wg_clipr'));if(_v>0)CLIPR=_v;}catch(e){}
+const clipUniforms=[];
+function addRadialClip(mesh,keepBelow){const m=mesh.material;if(!m)return;m.onBeforeCompile=(sh)=>{const u={value:CLIPR};sh.uniforms.uClipR=u;clipUniforms.push(u);
+  sh.vertexShader='varying vec3 vWPc;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvWPc=(modelMatrix*vec4(transformed,1.0)).xyz;');
+  const cond=keepBelow!=null?('vWPc.y>('+keepBelow.toFixed(1)+')&&'):'';
+  sh.fragmentShader='varying vec3 vWPc;uniform float uClipR;\n'+sh.fragmentShader.replace('void main() {','void main() {\nif('+cond+'length(vWPc.xz)>uClipR)discard;');
+ };m.needsUpdate=true;}
+function setClip(r){CLIPR=r;clipUniforms.forEach(u=>u.value=r);try{localStorage.setItem('wg_clipr',String(r));}catch(e){}}
 function buildRiver(){
   const R=21.8, Y=-0.22, COLS=34, FALLH=15, FROWS=18, DROWS=90, XIN=19;
   // roughly-straight path along X, but with ORGANIC banks: gentle centre wander + independent left/right edge wobble
@@ -154,6 +162,7 @@ loader.load('island.glb',(gltf)=>{
   islandRoot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material.side=T.FrontSide;}
     if(/IslandTop/i.test(o.name)){topY=new T.Box3().setFromObject(o).max.y;}
     if(/RiverWater/i.test(o.name)&&o.isMesh){o.visible=false;return;}
+    if(/RiverMud/i.test(o.name)&&o.isMesh){o.material=o.material.clone();addRadialClip(o,null);return;}
     if(/fountain_water/i.test(o.name)&&o.isMesh){o.material=makeWater();return;}
     if(o.isMesh&&o.material&&/Falls/i.test(o.material.name||'')){o.visible=false;}});
   islandRoot.traverse(o=>{if(o.userData&&o.userData.wg_name)holds.push(o);});
@@ -178,6 +187,7 @@ loader.load('island.glb',(gltf)=>{
   holds.forEach(snapBase);
   buildRiver();
   buildList();setMarket('fair');
+  try{renderer.compile(scene,camera);setClip(CLIPR);}catch(e){}
   const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',700);
 },undefined,(err)=>{document.getElementById('load').textContent='Could not load the isle.';console.error(err);});
 
@@ -257,7 +267,8 @@ addEventListener('pointerup',e=>{if(dragging){dragging=false;controls.enabled=tr
  if(!editMode&&downXY&&Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1])<5){const o=pickHold(e.clientX,e.clientY);if(o)focusOn(o);else{focusTarget=null;controls.autoRotate=!REDUCED;}}});
 // toolbar
 const tE=document.getElementById('tEdit');
-function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset'].forEach(id=>document.getElementById(id).style.display=v?'':'none');}
+function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset'].forEach(id=>document.getElementById(id).style.display=v?'':'none');document.getElementById('tClip').style.display=v?'inline-flex':'none';}
+{const cr=document.getElementById('clipR');cr.value=CLIPR;cr.addEventListener('input',()=>setClip(parseFloat(cr.value)));}
 tE.onclick=()=>{editMode=!editMode;tE.classList.toggle('on',editMode);showEditTools(editMode);controls.autoRotate=editMode?false:!REDUCED;hideCard();if(!editMode){clearSel();clearZone();drawMode=false;document.getElementById('tZone').classList.remove('on');setHint('<b>Drag</b> orbit · <b>click</b> a holding to focus');}else setHint('<b>Click</b> a holding or a <b>list group header</b> to select all of a type · <b>drag</b>/<b>arrows</b> move · <b>[ ]</b> rotate · <b>Draw zone</b> → <b>Fill</b>');};
 document.getElementById('tZone').onclick=(ev)=>{drawMode=!drawMode;ev.target.classList.toggle('on',drawMode);if(drawMode){clearZone();setHint('Click points on the ground to outline a zone, then Fill');}};
 document.getElementById('tFill').onclick=fillZone;
