@@ -90,6 +90,31 @@ const holds=[];const sways=[];const coins=[];const mines=[];let islandRoot=null,
 const terrainMeshes=[];const _dray=new T.Raycaster();const _dv=new T.Vector3(0,-1,0);
 function surfaceY(x,z){_dray.set(new T.Vector3(x,topY+80,z),_dv);const h=_dray.intersectObjects(terrainMeshes,false);return h.length?h[0].point.y:topY;}
 function snapBase(o){o.updateWorldMatrix(true,true);const wp=o.getWorldPosition(new T.Vector3());const sy=surfaceY(wp.x,wp.z);const bb=new T.Box3().setFromObject(o);if(!isFinite(bb.min.y))return;let delta=sy-bb.min.y;if(o.userData.wg_fam==='crypto')delta+=3.4;const ps=(o.parent||o).getWorldScale(new T.Vector3());o.position.y+=delta/(ps.y||1);o.updateWorldMatrix(true,true);}
+function buildRiver(){
+  const Y=-0.3;
+  const cl=[[-31,-15,1.4],[-27,-9.5,0.9],[-24,-4.5,0.4],[-22.6,-1.4,0.1],[-22,Y,0],
+    [-18,Y,-1.7],[-12,Y,1.9],[-6,Y,-1.5],[0,Y,1.3],[6,Y,-1.9],[12,Y,1.5],[17,Y,-1.1],[20,Y,0.5],[22,Y,0],
+    [22.6,-1.4,-0.2],[24,-4.5,-0.5],[27,-9.5,-0.9],[31,-15,-1.4]];
+  const wd=[4,5.5,7,9,12, 16,20,17,21,18,19,15,12,9, 7,5.5,4.5,4];
+  const curve=new T.CatmullRomCurve3(cl.map(p=>new T.Vector3(p[0],p[1],p[2])),false,'catmullrom',0.5);
+  const M=240;const pts=[],tans=[];for(let i=0;i<=M;i++){const t=i/M;pts.push(curve.getPoint(t));tans.push(curve.getTangent(t).normalize());}
+  const widthAt=t=>{const f=t*(wd.length-1),i=Math.floor(f),fr=f-i;return T.MathUtils.lerp(wd[Math.min(i,wd.length-1)],wd[Math.min(i+1,wd.length-1)],fr);};
+  let N=new T.Vector3(0,1,0);N.sub(tans[0].clone().multiplyScalar(N.dot(tans[0])));if(N.lengthSq()<1e-4)N.set(1,0,0);N.normalize();
+  const verts=[],uvs=[],steeps=[],idx=[];let vlen=0;
+  for(let i=0;i<=M;i++){const Tt=tans[i];
+    if(i>0){const pr=tans[i-1],ax=pr.clone().cross(Tt),s=ax.length();if(s>1e-5){ax.divideScalar(s);N.applyAxisAngle(ax,Math.acos(T.MathUtils.clamp(pr.dot(Tt),-1,1)));}}
+    N.sub(Tt.clone().multiplyScalar(N.dot(Tt)));if(N.lengthSq()<1e-4)N.set(0,1,0);N.normalize();
+    const B=Tt.clone().cross(N).normalize();const w=widthAt(i/M)*0.5;
+    if(i>0)vlen+=pts[i].distanceTo(pts[i-1]);
+    const L=pts[i].clone().addScaledVector(B,-w),R=pts[i].clone().addScaledVector(B,w);
+    const steep=Math.min(1,Math.abs(Tt.y)*1.7);
+    verts.push(L.x,L.y,L.z, R.x,R.y,R.z);uvs.push(0,vlen, 1,vlen);steeps.push(steep,steep);}
+  for(let i=0;i<M;i++){const a=i*2;idx.push(a,a+1,a+3, a,a+3,a+2);}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(verts,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('steep',new T.Float32BufferAttribute(steeps,1));g.setIndex(idx);g.computeVertexNormals();
+  const mat=new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:waterU,
+    vertexShader:'attribute float steep;varying vec2 vu;varying float vs;varying vec3 wp;void main(){vu=uv;vs=steep;wp=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying vec3 wp;void main(){float ft=t*flow;float w=sin(wp.x*0.6+ft*1.4)*0.5+sin(wp.z*0.8-ft*1.1)*0.5;vec3 col=mix(cA,cB,clamp(w*0.5+0.5,0.0,1.0));float sp=smoothstep(0.85,1.0,sin(wp.x*2.5+ft*2.2)*sin(wp.z*2.7-ft*1.9));col+=sp*0.4;float bands=fract(vu.y*0.5-ft*(0.7+vs*2.4));float foam=smoothstep(0.62,1.0,bands)*(0.22+vs*0.95);col=mix(col,vec3(1.0),foam);float edge=1.0-smoothstep(0.0,0.17,vu.x)*smoothstep(0.0,0.17,1.0-vu.x);col=mix(col,vec3(1.0),edge*0.33);gl_FragColor=vec4(col,0.93-vs*0.08);}'});
+  const mesh=new T.Mesh(g,mat);mesh.name='RiverRibbon';mesh.renderOrder=2;islandRoot.add(mesh);return mesh;}
 const fruitMat=new T.MeshStandardMaterial({color:0xE0483A,roughness:.5,emissive:0x330a06,emissiveIntensity:.25});
 function addFruit(o){const box=new T.Box3().setFromObject(o);const c=box.getCenter(new T.Vector3());const sz=box.getSize(new T.Vector3());const invS=1/(o.scale.x||1);for(let i=0;i<4;i++){const a=Math.random()*6.28,rr=sz.x*0.26*Math.sqrt(Math.random());const wp=new T.Vector3(c.x+Math.cos(a)*rr,box.min.y+sz.y*(0.58+Math.random()*0.28),c.z+Math.sin(a)*rr);const m=new T.Mesh(new T.SphereGeometry(0.5,10,10),fruitMat);m.position.copy(o.worldToLocal(wp.clone()));m.scale.setScalar(invS);o.add(m);}}
 const loader=new T.GLTFLoader();
@@ -99,8 +124,9 @@ loader.load('island.glb',(gltf)=>{
   controls.target.set(ctr.x,ctr.y+size.y*0.13,ctr.z);
   islandRoot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material)o.material.side=T.FrontSide;}
     if(/IslandTop/i.test(o.name)){topY=new T.Box3().setFromObject(o).max.y;}
-    if(/water/i.test(o.name)&&o.isMesh){o.material=makeWater();return;}
-    if(o.isMesh&&o.material&&/Falls/i.test(o.material.name||'')){o.material=makeFall();}});
+    if(/RiverWater/i.test(o.name)&&o.isMesh){o.visible=false;return;}
+    if(/fountain_water/i.test(o.name)&&o.isMesh){o.material=makeWater();return;}
+    if(o.isMesh&&o.material&&/Falls/i.test(o.material.name||'')){o.visible=false;}});
   islandRoot.traverse(o=>{if(o.userData&&o.userData.wg_name)holds.push(o);});
   // parent metal ore spheres to nearest metal rock so they follow drags
   const ores=[];islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||''))ores.push(o);});
@@ -121,6 +147,7 @@ loader.load('island.glb',(gltf)=>{
   if(energyH.length){const strayB=[];islandRoot.traverse(o=>{if(/^Barrel/i.test(o.name||'')&&!holdSet.has(o))strayB.push(o);});
     const cnt=new Map();strayB.forEach((b,i)=>{const e=energyH[i%energyH.length];e.updateWorldMatrix(true,true);const n=cnt.get(e)||0;cnt.set(e,n+1);const ang=n*2.4+0.8;const tw=e.getWorldPosition(new T.Vector3()).add(new T.Vector3(Math.cos(ang)*2.2,0,Math.sin(ang)*2.2));e.attach(b);b.position.copy(e.worldToLocal(tw.clone()));b.updateWorldMatrix(true,true);});}
   holds.forEach(snapBase);
+  buildRiver();
   buildList();setMarket('fair');
   const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',700);
 },undefined,(err)=>{document.getElementById('load').textContent='Could not load the isle.';console.error(err);});
