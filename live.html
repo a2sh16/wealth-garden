@@ -27,7 +27,16 @@
 #exp h3{margin:0 0 6px;font-family:Georgia,serif}#exp p{color:var(--dim);font-size:12px;margin:0 0 10px}
 #exp textarea{width:100%;height:180px;background:#0b110d;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,monospace;font-size:11px;padding:8px}
 #exp .r{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}#exp button{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-@media(max-width:720px){.list{display:none}}
+#testpanel{display:none;position:fixed;top:132px;left:20px;width:212px;z-index:7;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;backdrop-filter:blur(10px)}
+#testpanel h2{font-family:Georgia,serif;font-size:13px;margin:0 0 8px}
+#testpanel label{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:9px 0 3px}
+#testpanel label b{color:var(--ink);font-family:ui-monospace,monospace;text-transform:none}
+#testpanel input[type=range]{width:100%}
+#testpanel .tp-btns{display:flex;flex-direction:column;gap:5px;margin-top:11px}
+#testpanel .tp-btns button{font:inherit;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);padding:7px 9px;border-radius:8px;cursor:pointer;text-align:left}
+#testpanel .tp-btns button:hover{background:rgba(255,255,255,.12)}
+#testpanel .tp-note{font-size:9.5px;color:var(--dim);margin:9px 0 0;line-height:1.4}
+@media(max-width:720px){.list,#testpanel{display:none}}
 </style>
 <canvas id="c"></canvas>
 <div id="load">shaping the isle…</div>
@@ -36,14 +45,21 @@
 <div class="bar">
  <div class="seg" id="market"></div>
  <div class="seg" id="tools">
-   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><button id="tAddStatue" style="display:none">＋ Statue</button><span id="tSize" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">Size<input type="range" id="sizeR" min="0.3" max="2.6" step="0.05" style="width:90px;vertical-align:middle"></span><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="16" max="27" step="0.2" style="width:96px;vertical-align:middle"></span>
+   <button id="tTest">🧪 Test</button><button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><button id="tAddStatue" style="display:none">＋ Statue</button><span id="tSize" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">Size<input type="range" id="sizeR" min="0.3" max="2.6" step="0.05" style="width:90px;vertical-align:middle"></span><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="16" max="27" step="0.2" style="width:96px;vertical-align:middle"></span>
  </div>
 </div>
 <aside class="list"><h2>Holdings</h2><div id="lb"></div></aside>
+<aside id="testpanel"><h2>Test scenarios</h2>
+ <label>Volatility <b id="volV">1.0×</b></label><input type="range" id="volR" min="0" max="3" step="0.1" value="1">
+ <label>Wealth growth <b id="growV">0%</b></label><input type="range" id="growR" min="-40" max="150" step="5" value="0">
+ <label>Dividend yield <b id="yldV">1.0×</b></label><input type="range" id="yldR" min="0" max="4" step="0.1" value="1">
+ <div class="tp-btns"><button id="btnRand">🎲 Randomize P/L</button><button id="btnDiv">💰 Pay dividends</button><button id="btnCrash">📉 Flash crash</button><button id="btnMoon">🚀 Melt-up</button><button id="btnTreset">↺ Reset</button></div>
+ <p class="tp-note">Layers on top of the market bar. Not saved.</p>
+</aside>
 <div id="card"></div>
 <div id="exp"><div class="box"><h3>Layout export</h3><p>Copied to your clipboard. Paste this to me and I'll bake it in as the permanent layout. It's also saved in this browser.</p><textarea id="expT" readonly></textarea><div class="r"><button id="expClose">Close</button></div></div></div>
 <div class="hint" id="hint"><b>Drag</b> orbit · <b>scroll</b> zoom · <b>click</b> a holding to focus</div>
-<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 8 · upright fix</div>
+<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 9 · test panel</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -57,7 +73,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script>
-console.log('%cWealth Isle — build 8 (upright fix assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
+console.log('%cWealth Isle — build 9 (test panel + upright assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
 const T=THREE;const MOBILE=innerWidth<720||('ontouchstart'in window&&innerWidth<900);
 const FAM={stock:['Stocks','#3a9a3a'],bond:['Bonds','#1baf7a'],metal:['Metals','#eda100'],energy:['Energy','#eb6834'],crypto:['Crypto','#f0902a'],realestate:['Real estate','#8a63c9'],cash:['Cash','#2a78d6'],collectable:['Collectables','#e87ba4'],alts:['Alternatives','#e87ba4']};
 const BETA={stock:1.1,bond:0.3,metal:0.7,energy:1.4,crypto:2.0,cash:0.04,realestate:0.9,collectable:0.4,alts:1.1};
@@ -244,6 +260,7 @@ loader.load('island.glb',(gltf)=>{
     if(fam==='stock')addFruit(o);});
   statueTemplate=holds.find(h=>/Statue/i.test(h.name||'')&&h.userData.wg_fam==='collectable')||holds.find(h=>h.userData.wg_fam==='collectable');
   try{addedStatues=JSON.parse(localStorage.getItem('wg_statues')||'[]');}catch(e){addedStatues=[];}
+  ['Statue 2'].forEach(n=>{if(!addedStatues.includes(n))addedStatues.push(n);}); // baked default statues
   addedStatues.forEach(nm=>makeStatue(nm));
   applyLayout();
   islandRoot.updateMatrixWorld(true);
@@ -292,6 +309,24 @@ function setMarket(m){curM=m;const k=MK[m];holds.forEach(o=>{const j=(o.userData
  const dv=holds.reduce((s,o)=>s+(+o.userData.wg_val)*(o.userData.day||0)/100,0),tot=holds.reduce((s,o)=>s+(+o.userData.wg_val),0),p=tot?dv/tot*100:0;const el=document.getElementById('today');el.textContent=(p>=0?'+':'')+p.toFixed(2)+'%';el.className='v '+(p>=0?'up':'down');
  document.querySelectorAll('#market button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));buildList();}
 const mkbar=document.getElementById('market');['rally','fair','flat','bear','crash'].forEach(m=>{const b=document.createElement('button');b.dataset.m=m;b.textContent=MK[m].label;b.onclick=()=>setMarket(m);mkbar.appendChild(b);});
+// ---- Test scenarios panel ----
+let VOL=1,GROWTH=0,YLD=1;const payParts=[];
+function applyGrowth(){holds.forEach(o=>{const base=(o.userData.divScale||o.scale).clone().multiplyScalar(o.userData.scaleMul||1);o.scale.copy(base).multiplyScalar(1+GROWTH);snapBase(o);});}
+function randomizeReturns(){holds.forEach(o=>o.userData.seed=Math.random());setMarket(curM);}
+function payDividends(){const inc=holds.filter(h=>['stock','bond','realestate','cash'].includes(h.userData.wg_fam));
+  inc.forEach(o=>{o.updateWorldMatrix(true,true);const bb=new T.Box3().setFromObject(o);const c=bb.getCenter(new T.Vector3());const sz=bb.getSize(new T.Vector3());const n=1+Math.round((o.userData.yield||1)*YLD*0.6);
+   for(let i=0;i<Math.min(6,n);i++){const m=new T.Mesh(new T.SphereGeometry(0.3,8,8),new T.MeshStandardMaterial({color:0xF2C14E,emissive:0x6a4700,emissiveIntensity:0.6,transparent:true}));m.position.set(c.x+(Math.random()-.5)*sz.x*0.5,bb.max.y+0.4,c.z+(Math.random()-.5)*sz.z*0.5);scene.add(m);payParts.push({m,vy:2.2+Math.random()*1.5,life:1.7});}});}
+function flash(regime){setMarket(regime);}
+const tpanel=document.getElementById('testpanel'),tTest=document.getElementById('tTest');
+tTest.onclick=()=>{const on=tpanel.style.display==='none'||!tpanel.style.display;tpanel.style.display=on?'block':'none';tTest.classList.toggle('on',on);};
+document.getElementById('volR').oninput=e=>{VOL=+e.target.value;document.getElementById('volV').textContent=VOL.toFixed(1)+'×';};
+document.getElementById('growR').oninput=e=>{GROWTH=+e.target.value/100;document.getElementById('growV').textContent=(GROWTH>=0?'+':'')+e.target.value+'%';applyGrowth();};
+document.getElementById('yldR').oninput=e=>{YLD=+e.target.value;document.getElementById('yldV').textContent=YLD.toFixed(1)+'×';};
+document.getElementById('btnRand').onclick=randomizeReturns;
+document.getElementById('btnDiv').onclick=payDividends;
+document.getElementById('btnCrash').onclick=()=>flash('crash');
+document.getElementById('btnMoon').onclick=()=>flash('rally');
+document.getElementById('btnTreset').onclick=()=>{VOL=1;GROWTH=0;YLD=1;document.getElementById('volR').value=1;document.getElementById('growR').value=0;document.getElementById('yldR').value=1;document.getElementById('volV').textContent='1.0×';document.getElementById('growV').textContent='0%';document.getElementById('yldV').textContent='1.0×';applyGrowth();setMarket('fair');document.querySelectorAll('#market button').forEach(b=>b.classList.toggle('on',b.dataset.m==='fair'));};
 
 // hover + focus + EDITOR
 const ray=new T.Raycaster(),mv=new T.Vector2();let hoverObj=null;const card=document.getElementById('card');
@@ -364,13 +399,14 @@ function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta
  if(focusTarget)controls.target.lerp(focusTarget,Math.min(1,dt*3));controls.update();
  const az=controls.getAzimuthalAngle();let daz=az-lastAz;if(daz>Math.PI)daz-=6.283;if(daz<-Math.PI)daz+=6.283;lastAz=az;windSpin+=((-daz*7)-windSpin)*Math.min(1,dt*6);
  waterU.t.value=t;fallU.t.value=t;
- if(!REDUCED){const gust=Math.sin(t*.5)*.5+.5;
-  for(const s of sways){s.o.rotation.z=s.base+Math.sin(t*(0.5+s.beta*0.7)+s.ph)*s.amp*(.6+gust)+windSpin*s.flex*0.12;}
-  for(const c of coins)c.o.rotation.y+=(0.4+c.beta*1.1)*dt;
+ if(!REDUCED){const gust=Math.sin(t*.5)*.5+.5;const vf=0.4+VOL*0.6;
+  for(const s of sways){s.o.rotation.z=s.base+Math.sin(t*(0.5+s.beta*0.7*VOL)+s.ph)*s.amp*(.6+gust)*vf+windSpin*s.flex*0.12;}
+  for(const c of coins)c.o.rotation.y+=(0.4+c.beta*1.1)*dt*(0.5+VOL*0.8);
+  if(payParts.length){for(let i=payParts.length-1;i>=0;i--){const p=payParts[i];p.vy-=dt*7;p.m.position.y+=p.vy*dt;p.life-=dt;p.m.material.opacity=Math.max(0,Math.min(1,p.life));if(p.life<=0){scene.remove(p.m);p.m.geometry.dispose();p.m.material.dispose();payParts.splice(i,1);}}}
   if(islandRoot&&!editMode)islandRoot.position.y=Math.sin(t*.5)*.5;
   clouds.forEach(c=>{c.position.x+=c.userData.sp*dt*(.5+waterU.flow.value*.4);if(c.position.x>140)c.position.x=-140;});
   birds.forEach(b=>{const u=b.userData;u.a+=u.sp*dt;b.position.set(Math.cos(u.a)*u.r,u.h+Math.sin(t*2+u.ph)*1.5,Math.sin(u.a)*u.r);b.rotation.y=-u.a+Math.PI/2;b.rotation.z=Math.sin(t*10+u.ph)*.3;});
-  dripT+=dt;if(dripT>.12){dripT=0;emitDrip();}const arr=drips.geometry.attributes.position.array;for(let i=0;i<DN;i++){const s=dstate[i];if(s.life>0){s.vy-=dt*9;s.y+=s.vy*dt;s.life-=dt;arr[i*3]=s.x;arr[i*3+1]=s.y;arr[i*3+2]=s.z;if(s.life<=0||s.y<-24)arr[i*3+1]=-999;}else arr[i*3+1]=-999;}drips.geometry.attributes.position.needsUpdate=true;}
+  dripT+=dt;if(dripT>.12/Math.max(0.3,VOL)){dripT=0;emitDrip();}const arr=drips.geometry.attributes.position.array;for(let i=0;i<DN;i++){const s=dstate[i];if(s.life>0){s.vy-=dt*9;s.y+=s.vy*dt;s.life-=dt;arr[i*3]=s.x;arr[i*3+1]=s.y;arr[i*3+2]=s.z;if(s.life<=0||s.y<-24)arr[i*3+1]=-999;}else arr[i*3+1]=-999;}drips.geometry.attributes.position.needsUpdate=true;}
  if(editMode)boxes.forEach(b=>b.update());
  if(hoverObj&&!editMode){const p=new T.Vector3();hoverObj.getWorldPosition(p);p.project(camera);showCard(hoverObj,(p.x*.5+.5)*innerWidth,(-p.y*.5+.5)*innerHeight);}
  composer.render();
