@@ -91,29 +91,33 @@ const terrainMeshes=[];const _dray=new T.Raycaster();const _dv=new T.Vector3(0,-
 function surfaceY(x,z){_dray.set(new T.Vector3(x,topY+80,z),_dv);const h=_dray.intersectObjects(terrainMeshes,false);return h.length?h[0].point.y:topY;}
 function snapBase(o){o.updateWorldMatrix(true,true);const wp=o.getWorldPosition(new T.Vector3());const sy=surfaceY(wp.x,wp.z);const bb=new T.Box3().setFromObject(o);if(!isFinite(bb.min.y))return;let delta=sy-bb.min.y;if(o.userData.wg_fam==='crypto')delta+=3.4;const ps=(o.parent||o).getWorldScale(new T.Vector3());o.position.y+=delta/(ps.y||1);o.updateWorldMatrix(true,true);}
 function buildRiver(){
-  const Y=-0.3;
-  const cl=[[-31,-15,1.4],[-27,-9.5,0.9],[-24,-4.5,0.4],[-22.6,-1.4,0.1],[-22,Y,0],
-    [-18,Y,-1.7],[-12,Y,1.9],[-6,Y,-1.5],[0,Y,1.3],[6,Y,-1.9],[12,Y,1.5],[17,Y,-1.1],[20,Y,0.5],[22,Y,0],
-    [22.6,-1.4,-0.2],[24,-4.5,-0.5],[27,-9.5,-0.9],[31,-15,-1.4]];
-  const wd=[4,5.5,7,9,12, 16,20,17,21,18,19,15,12,9, 7,5.5,4.5,4];
-  const curve=new T.CatmullRomCurve3(cl.map(p=>new T.Vector3(p[0],p[1],p[2])),false,'catmullrom',0.5);
-  const M=240;const pts=[],tans=[];for(let i=0;i<=M;i++){const t=i/M;pts.push(curve.getPoint(t));tans.push(curve.getTangent(t).normalize());}
-  const widthAt=t=>{const f=t*(wd.length-1),i=Math.floor(f),fr=f-i;return T.MathUtils.lerp(wd[Math.min(i,wd.length-1)],wd[Math.min(i+1,wd.length-1)],fr);};
-  let N=new T.Vector3(0,1,0);N.sub(tans[0].clone().multiplyScalar(N.dot(tans[0])));if(N.lengthSq()<1e-4)N.set(1,0,0);N.normalize();
-  const verts=[],uvs=[],steeps=[],idx=[];let vlen=0;
-  for(let i=0;i<=M;i++){const Tt=tans[i];
-    if(i>0){const pr=tans[i-1],ax=pr.clone().cross(Tt),s=ax.length();if(s>1e-5){ax.divideScalar(s);N.applyAxisAngle(ax,Math.acos(T.MathUtils.clamp(pr.dot(Tt),-1,1)));}}
-    N.sub(Tt.clone().multiplyScalar(N.dot(Tt)));if(N.lengthSq()<1e-4)N.set(0,1,0);N.normalize();
-    const B=Tt.clone().cross(N).normalize();const w=widthAt(i/M)*0.5;
-    if(i>0)vlen+=pts[i].distanceTo(pts[i-1]);
-    const L=pts[i].clone().addScaledVector(B,-w),R=pts[i].clone().addScaledVector(B,w);
-    const steep=Math.min(1,Math.abs(Tt.y)*1.7);
-    verts.push(L.x,L.y,L.z, R.x,R.y,R.z);uvs.push(0,vlen, 1,vlen);steeps.push(steep,steep);}
-  for(let i=0;i<M;i++){const a=i*2;idx.push(a,a+1,a+3, a,a+3,a+2);}
-  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(verts,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('steep',new T.Float32BufferAttribute(steeps,1));g.setIndex(idx);g.computeVertexNormals();
+  const R=21.8, Y=-0.28, COLS=30, FALLH=15, FROWS=18, DROWS=70, XIN=19;
+  // straight centre path along X (z=0); width varies gently but stays wide enough to fill the ~18-wide channel
+  const wAt=x=>T.MathUtils.clamp(17.5 + 2.4*Math.sin(x*0.5) + 1.6*Math.cos(x*0.27), 12, 19);
+  const rows=[]; // {pts:[Vector3 x COLS], steep, flowv}
+  function deckRow(x){const w=wAt(x),pts=[];for(let j=0;j<COLS;j++){const u=j/(COLS-1);pts.push(new T.Vector3(x,Y,(u-0.5)*w));}return {pts,steep:0,flowv:x};}
+  // fall row: side +1 east / -1 west; d=0 at lip .. 1 at bottom. Top lip follows the island's round edge arc; slight round + outward drift going down
+  function fallRow(side,d,w){const pts=[],y=Y-d*FALLH,bulge=0.9*Math.sin(Math.min(1,d*2.4)*Math.PI*0.5)+d*2.4;
+    for(let j=0;j<COLS;j++){const u=j/(COLS-1),z=(u-0.5)*w,ex=Math.sqrt(Math.max(0,R*R-z*z));pts.push(new T.Vector3(side*(ex+bulge),y,z));}
+    return {pts,steep:Math.min(1,0.35+d*0.85),flowv:side*(R+1+d*FALLH)};}
+  const wW=wAt(-XIN), wE=wAt(XIN);
+  for(let i=FROWS;i>=1;i--)rows.push(fallRow(-1,i/FROWS,wW));      // west fall: bottom -> lip
+  for(let i=0;i<=DROWS;i++)rows.push(deckRow(-XIN+2*XIN*(i/DROWS))); // river deck: west -> east
+  for(let i=1;i<=FROWS;i++)rows.push(fallRow(1,i/FROWS,wE));        // east fall: lip -> bottom
+  const verts=[],uvs=[],steeps=[],flowvs=[],idx=[],NR=rows.length;
+  for(let r=0;r<NR;r++){const row=rows[r];for(let j=0;j<COLS;j++){const p=row.pts[j];verts.push(p.x,p.y,p.z);uvs.push(j/(COLS-1),r/(NR-1));steeps.push(row.steep);flowvs.push(row.flowv);}}
+  for(let r=0;r<NR-1;r++)for(let j=0;j<COLS-1;j++){const a=r*COLS+j,b=a+1,c=a+COLS,e=c+1;idx.push(a,c,b, b,c,e);}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(verts,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('steep',new T.Float32BufferAttribute(steeps,1));g.setAttribute('flowv',new T.Float32BufferAttribute(flowvs,1));g.setIndex(idx);g.computeVertexNormals();
   const mat=new T.ShaderMaterial({transparent:true,side:T.DoubleSide,depthWrite:false,uniforms:waterU,
-    vertexShader:'attribute float steep;varying vec2 vu;varying float vs;varying vec3 wp;void main(){vu=uv;vs=steep;wp=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:'uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying vec3 wp;void main(){float ft=t*flow;float w=sin(wp.x*0.6+ft*1.4)*0.5+sin(wp.z*0.8-ft*1.1)*0.5;vec3 col=mix(cA,cB,clamp(w*0.5+0.5,0.0,1.0));float sp=smoothstep(0.85,1.0,sin(wp.x*2.5+ft*2.2)*sin(wp.z*2.7-ft*1.9));col+=sp*0.4;float bands=fract(vu.y*0.5-ft*(0.7+vs*2.4));float foam=smoothstep(0.62,1.0,bands)*(0.22+vs*0.95);col=mix(col,vec3(1.0),foam);float edge=1.0-smoothstep(0.0,0.17,vu.x)*smoothstep(0.0,0.17,1.0-vu.x);col=mix(col,vec3(1.0),edge*0.33);gl_FragColor=vec4(col,0.93-vs*0.08);}'});
+    vertexShader:'attribute float steep;attribute float flowv;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;void main(){vu=uv;vs=steep;vf=flowv;wp=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'uniform float t;uniform float flow;uniform vec3 cA;uniform vec3 cB;varying vec2 vu;varying float vs;varying float vf;varying vec3 wp;void main(){float ft=t*flow;float dir=sign(vf);float aw=abs(vf);\
+      float w=sin(wp.x*0.5-dir*ft*1.3)*0.5+sin(wp.z*0.7+ft*0.9)*0.5;vec3 col=mix(cA,cB,clamp(w*0.5+0.5,0.0,1.0));\
+      float bands=fract(aw*0.34-ft*(0.55+vs*2.3));float foam=smoothstep(0.6,1.0,bands)*(0.16+vs*1.0);\
+      float streak=vs*smoothstep(0.55,1.0,fract(vu.x*9.0+sin(aw*0.6)))*0.22;\
+      col=mix(col,vec3(1.0),foam+streak);\
+      float sp=smoothstep(0.86,1.0,sin(wp.x*2.3+ft*2.0)*sin(wp.z*2.5-ft*1.7))*(1.0-vs);col+=sp*0.4;\
+      float edge=1.0-smoothstep(0.0,0.13,vu.x)*smoothstep(0.0,0.13,1.0-vu.x);col=mix(col,vec3(1.0),edge*0.3);\
+      gl_FragColor=vec4(col,0.94-vs*0.06);}'});
   const mesh=new T.Mesh(g,mat);mesh.name='RiverRibbon';mesh.renderOrder=2;islandRoot.add(mesh);return mesh;}
 const fruitMat=new T.MeshStandardMaterial({color:0xE0483A,roughness:.5,emissive:0x330a06,emissiveIntensity:.25});
 function addFruit(o){const box=new T.Box3().setFromObject(o);const c=box.getCenter(new T.Vector3());const sz=box.getSize(new T.Vector3());const invS=1/(o.scale.x||1);for(let i=0;i<4;i++){const a=Math.random()*6.28,rr=sz.x*0.26*Math.sqrt(Math.random());const wp=new T.Vector3(c.x+Math.cos(a)*rr,box.min.y+sz.y*(0.58+Math.random()*0.28),c.z+Math.sin(a)*rr);const m=new T.Mesh(new T.SphereGeometry(0.5,10,10),fruitMat);m.position.copy(o.worldToLocal(wp.clone()));m.scale.setScalar(invS);o.add(m);}}
