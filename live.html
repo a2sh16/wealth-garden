@@ -36,7 +36,7 @@
 <div class="bar">
  <div class="seg" id="market"></div>
  <div class="seg" id="tools">
-   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="16" max="27" step="0.2" style="width:96px;vertical-align:middle"></span>
+   <button id="tEdit">✎ Edit</button><button id="tZone" style="display:none">▱ Draw zone</button><button id="tFill" style="display:none">⤵ Fill zone</button><button id="tClear" style="display:none">✕ Clear zone</button><button id="tSave" style="display:none">💾 Save</button><button id="tExport" style="display:none">⤓ Export</button><button id="tReset" style="display:none">↺ Reset</button><button id="tAddStatue" style="display:none">＋ Statue</button><span id="tSize" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">Size<input type="range" id="sizeR" min="0.3" max="2.6" step="0.05" style="width:90px;vertical-align:middle"></span><span id="tClip" style="display:none;align-items:center;gap:6px;padding:0 8px;color:var(--dim);font-size:11px">River clip<input type="range" id="clipR" min="16" max="27" step="0.2" style="width:96px;vertical-align:middle"></span>
  </div>
 </div>
 <aside class="list"><h2>Holdings</h2><div id="lb"></div></aside>
@@ -181,6 +181,41 @@ function buildRiver(){
       float alpha=clamp(0.9+bank*0.1+vs*0.06,0.0,1.0);
       gl_FragColor=vec4(col,alpha);}`});
   const mesh=new T.Mesh(g,mat);mesh.name='RiverRibbon';mesh.renderOrder=2;islandRoot.add(mesh);return mesh;}
+// ---- diversification helpers ----
+function jr(s,i){return hh(s+'|'+i);}
+function symbolTex(char,col){const cv=document.createElement('canvas');cv.width=cv.height=128;const x=cv.getContext('2d');x.clearRect(0,0,128,128);x.fillStyle='#'+new T.Color(col).getHexString();x.beginPath();x.arc(64,64,60,0,7);x.fill();x.lineWidth=6;x.strokeStyle='rgba(255,255,255,.35)';x.stroke();x.fillStyle='#fff';x.font='bold 82px system-ui,Segoe UI,Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(char,64,72);const t=new T.CanvasTexture(cv);t.needsUpdate=true;return t;}
+function attachAt(parent,child,wpos,worldUnit){parent.updateWorldMatrix(true,true);parent.add(child);const ps=parent.getWorldScale(new T.Vector3());const s=(ps.x+ps.y+ps.z)/3||1;child.scale.setScalar(worldUnit/s);child.position.copy(parent.worldToLocal(wpos.clone()));}
+function emblemOn(o,char,col){const bb=new T.Box3().setFromObject(o);const c=bb.getCenter(new T.Vector3());const sz=bb.getSize(new T.Vector3());const r=Math.max(sz.x,sz.y)*0.55;const spr=new T.Sprite(new T.SpriteMaterial({map:symbolTex(char,col),transparent:true,depthWrite:false,depthTest:true}));attachAt(o,spr,c,r);spr.name='emblem';return spr;}
+const COIN={Bitcoin:['₿',0xF7931A],Ethereum:['Ξ',0x6f78e0],Solana:['◎',0x14e0b0],BNB:['◆',0xF3BA2F],XRP:['✕',0x28b6e6]};
+const OREC={Gold:0xF2C14E,Silver:0xD9DDE6,Platinum:0xEDEEF2,Copper:0xC46A3B,Lithium:0xE59BB8,Palladium:0xC9CEDA,Uranium:0x77E86A};
+const BARRELC=[0x3b6ea5,0xB23A2E,0x3f7d44,0x8a6d3b,0x45474e,0xc9852f];
+const BUSHC=[0x4f8f3a,0x6aa63f,0x3f7d44,0x8FA83E,0x5b9b57,0x74b04a];
+const CURSYM={USD:'$',EUR:'€',GBP:'£',JPY:'¥',CHF:'₣',AUD:'A$',CAD:'C$',CNY:'¥',NZD:'N$'};
+function forexMarker(o){const raw=(o.userData.wg_name||'').replace(/\(.*\)/,'').trim();const parts=raw.split('/');const a=(parts[0]||'USD').slice(0,3).toUpperCase(),b=(parts[1]||'EUR').slice(0,3).toUpperCase();
+  const bb=new T.Box3().setFromObject(o);const c=bb.getCenter(new T.Vector3());const sz=bb.getSize(new T.Vector3());const S=Math.max(sz.x,sz.z);
+  o.traverse(k=>{if(k.isMesh)k.visible=false;});
+  const g=new T.Group();
+  const ped=new T.Mesh(new T.CylinderGeometry(0.95,1.25,0.5,18),new T.MeshStandardMaterial({color:0x9aa0a8,roughness:0.85,metalness:0.1}));ped.position.y=0.25;g.add(ped);
+  const post=new T.Mesh(new T.CylinderGeometry(0.12,0.12,1.6,8),new T.MeshStandardMaterial({color:0x6b7078,roughness:0.7}));post.position.y=1.1;g.add(post);
+  [[a,-0.8,0xcf9b28],[b,0.8,0x3f6ea5]].forEach(([cur,dx,col])=>{const disc=new T.Mesh(new T.CylinderGeometry(0.8,0.8,0.16,26),new T.MeshStandardMaterial({color:col,metalness:0.6,roughness:0.35}));disc.rotation.x=Math.PI/2;disc.position.set(dx,1.95,0);g.add(disc);const spr=new T.Sprite(new T.SpriteMaterial({map:symbolTex(CURSYM[cur]||cur[0],col),transparent:true,depthWrite:false}));spr.scale.setScalar(1.15);spr.position.set(dx,1.95,0.12);g.add(spr);});
+  attachAt(o,g,new T.Vector3(c.x,bb.min.y,c.z),S/4.2);o.userData._forex=g;return g;}
+let _diversified=false;
+function diversify(){if(_diversified)return;_diversified=true;
+  // BARRELS — vary shape (non-uniform scale), rotation, colour
+  const bg=[];islandRoot.traverse(o=>{if(/^Barrel\d+$/.test(o.name||''))bg.push(o);});
+  bg.forEach(b=>{const s=hh(b.name);b.scale.multiply(new T.Vector3(0.82+s*0.42,0.78+jr(b.name,'h')*0.7,0.82+jr(b.name,'d')*0.42));b.rotation.y=s*6.283;const col=BARRELC[Math.floor(jr(b.name,'c')*BARRELC.length)];b.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();k.material.color.setHex(col);}});});
+  // ROCKS — vary shape + rotation
+  holds.filter(h=>h.userData.wg_fam==='metal').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiply(new T.Vector3(0.8+s*0.45,0.85+jr(o.userData.wg_name,'h')*0.5,0.8+jr(o.userData.wg_name,'d')*0.45));o.rotation.y=s*6.283;});
+  // ORES — colour per metal + vary size (+ uranium glow)
+  islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||'')){let p=o;while(p&&!p.userData.wg_name)p=p.parent;const nm=p&&p.userData.wg_name;const col=OREC[nm]||0xE0C060;o.material=o.material.clone();o.material.color.setHex(col);o.material.metalness=0.5;o.material.roughness=0.45;if(nm==='Uranium'){o.material.emissive=new T.Color(0x2f9f2f);o.material.emissiveIntensity=0.7;}o.scale.multiplyScalar(0.72+hh((o.name||'')+nm)*0.7);
+    if(p){o.visible=true;p.updateWorldMatrix(true,true);const bb=new T.Box3().setFromObject(p);const cc=bb.getCenter(new T.Vector3());const topW=new T.Vector3(cc.x+(hh(nm+'ox')-.5)*bb.getSize(new T.Vector3()).x*0.3, bb.max.y-0.3, cc.z+(hh(nm+'oz')-.5)*bb.getSize(new T.Vector3()).z*0.3);o.position.copy(p.worldToLocal(topW));}}});
+  // BUSHES — vary shape + green variety
+  holds.filter(h=>h.userData.wg_fam==='bond').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiply(new T.Vector3(0.8+s*0.5,0.8+jr(o.userData.wg_name,'h')*0.55,0.8+jr(o.userData.wg_name,'d')*0.5));o.rotation.y=s*6.283;const tc=new T.Color(BUSHC[Math.floor(jr(o.userData.wg_name,'c')*BUSHC.length)]);o.userData._fol.forEach(fl=>{fl.o.copy(tc);fl.m.color.copy(tc);});});
+  // COINS — 4 majors + generic (crypto) and a cash coin
+  holds.filter(h=>h.userData.wg_fam==='crypto'||h.userData.wg_fam==='cash').forEach(o=>{const cash=o.userData.wg_fam==='cash';const st=cash?['$',0x3fa34d]:(COIN[o.userData.wg_name]||['⬢',0x9aa7b4]);o.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();k.material.color.setHex(st[1]);k.material.metalness=0.65;k.material.roughness=0.32;}});emblemOn(o,st[0],st[1]);});
+  // FOREX — replace the windmill with a currency-pair marker
+  holds.filter(h=>h.userData.wg_fam==='alts'&&(/\//.test(h.userData.wg_name)||/\bFX\b|forex/i.test(h.userData.wg_name))).forEach(forexMarker);
+}
 const fruitMat=new T.MeshStandardMaterial({color:0xE0483A,roughness:.5,emissive:0x330a06,emissiveIntensity:.25});
 function addFruit(o){const box=new T.Box3().setFromObject(o);const c=box.getCenter(new T.Vector3());const sz=box.getSize(new T.Vector3());const invS=1/(o.scale.x||1);for(let i=0;i<4;i++){const a=Math.random()*6.28,rr=sz.x*0.26*Math.sqrt(Math.random());const wp=new T.Vector3(c.x+Math.cos(a)*rr,box.min.y+sz.y*(0.58+Math.random()*0.28),c.z+Math.sin(a)*rr);const m=new T.Mesh(new T.SphereGeometry(0.5,10,10),fruitMat);m.position.copy(o.worldToLocal(wp.clone()));m.scale.setScalar(invS);o.add(m);}}
 const loader=new T.GLTFLoader();
@@ -198,13 +233,16 @@ loader.load('island.glb',(gltf)=>{
   // parent metal ore spheres to nearest metal rock so they follow drags
   const ores=[];islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||''))ores.push(o);});
   const metals=holds.filter(h=>h.userData.wg_fam==='metal');
-  ores.forEach(ore=>{let best=null,bd=1e9;const op=new T.Vector3();ore.getWorldPosition(op);metals.forEach(m=>{const mp=new T.Vector3();m.getWorldPosition(mp);const d=mp.distanceToSquared(op);if(d<bd){bd=d;best=m;}});if(best){best.attach(ore);}});
+  ores.forEach((ore,i)=>{const best=metals[i%metals.length];if(best)best.attach(ore);});
   holds.forEach(o=>{const fam=o.userData.wg_fam||'alts';o.userData.beta=BETA[fam]||1;const yr=YIELDF[fam]||[0,0];o.userData.yield=+(yr[0]+hh(o.userData.wg_name)*(yr[1]-yr[0])).toFixed(1);o.userData.seed=hh(o.userData.wg_name+'x');
     o.userData._mats=[];o.userData._fol=[];o.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();o.userData._mats.push(k.material);const c=k.material.color;if(c.g>c.r*1.03&&c.g>c.b*1.03)o.userData._fol.push({m:k.material,o:c.clone()});}});
     const nm=o.name||'';const isTree=/Tree/i.test(nm)||fam==='stock';const isBush=/Bush/i.test(nm)||fam==='bond';const isCoin=/Coin/i.test(nm)||fam==='crypto'||fam==='cash';const isBuild=/building|skyscraper|Windmill|fountain/i.test(nm)||fam==='realestate';const isMine=/Resource_Rock/i.test(nm)||fam==='metal';
     if(isTree||isBush)sways.push({o,base:o.rotation.z,amp:(isBush?0.03:0.06),ph:Math.random()*6.28,flex:isBush?0.5:1,beta:o.userData.beta});else if(isBuild)sways.push({o,base:o.rotation.z,amp:0.01,ph:Math.random()*6,flex:0.4,beta:0.5});
     if(isCoin)coins.push({o,beta:o.userData.beta});if(isMine)mines.push(o);
     if(fam==='stock')addFruit(o);});
+  statueTemplate=holds.find(h=>/Statue/i.test(h.name||'')&&h.userData.wg_fam==='collectable')||holds.find(h=>h.userData.wg_fam==='collectable');
+  try{addedStatues=JSON.parse(localStorage.getItem('wg_statues')||'[]');}catch(e){addedStatues=[];}
+  addedStatues.forEach(nm=>makeStatue(nm));
   applyLayout();
   islandRoot.updateMatrixWorld(true);
   const holdSet=new Set();holds.forEach(h=>h.traverse(k=>holdSet.add(k)));
@@ -213,6 +251,8 @@ loader.load('island.glb',(gltf)=>{
   const energyH=holds.filter(h=>h.userData.wg_fam==='energy');
   if(energyH.length){const strayB=[];islandRoot.traverse(o=>{if(/^Barrel/i.test(o.name||'')&&!holdSet.has(o))strayB.push(o);});
     const cnt=new Map();strayB.forEach((b,i)=>{const e=energyH[i%energyH.length];e.updateWorldMatrix(true,true);const n=cnt.get(e)||0;cnt.set(e,n+1);const ang=n*2.4+0.8;const tw=e.getWorldPosition(new T.Vector3()).add(new T.Vector3(Math.cos(ang)*2.2,0,Math.sin(ang)*2.2));e.attach(b);b.position.copy(e.worldToLocal(tw.clone()));b.updateWorldMatrix(true,true);});}
+  diversify();
+  holds.forEach(o=>{o.userData.divScale=o.userData.divScale||o.scale.clone();const m=o.userData.savedMul;if(m&&m!==1){o.scale.copy(o.userData.divScale).multiplyScalar(m);o.userData.scaleMul=m;}else o.userData.scaleMul=o.userData.scaleMul||1;});
   holds.forEach(snapBase);
   buildList();setMarket('fair');
   try{renderer.compile(scene,camera);setClip(CLIPR);}catch(e){}
@@ -223,7 +263,7 @@ loader.load('island.glb',(gltf)=>{
 function applyLayout(){let base=null;try{base=window.__BAKED||null;}catch(e){}
   let saved=null;try{saved=JSON.parse(localStorage.getItem('wg_layout3')||'null');}catch(e){}
   const L=saved||base;
-  if(L){holds.forEach(o=>{const p=L[o.userData.wg_name];if(p){o.position.set(p[0],p[1],p[2]);if(p[3]!=null)o.rotation.y=p[3];}});}
+  if(L){holds.forEach(o=>{const p=L[o.userData.wg_name];if(p){o.position.set(p[0],p[1],p[2]);if(p[3]!=null)o.rotation.y=p[3];o.userData.savedMul=(p[4]&&p[4]>0)?p[4]:1;}});}
   else{holds.forEach(o=>{if(o.userData.wg_fam==='crypto')return;o.position.x+=(hh(o.userData.wg_name+'jx')-.5)*2.4;o.position.z+=(hh(o.userData.wg_name+'jz')-.5)*2.4;if(ROTOK[o.userData.wg_fam])o.rotation.y=hh(o.userData.wg_name+'jr')*6.28;});}
 }
 fetch('layout.json').then(r=>r.ok?r.json():null).then(j=>{if(j){window.__BAKED=j;if(holds.length)applyLayout();}}).catch(()=>{});
@@ -238,7 +278,7 @@ function buildList(){lb.innerHTML='';const byF={};let nw=0;holds.forEach(o=>{con
  document.getElementById('nw').textContent=fmt(nw);document.getElementById('hc').textContent=holds.length;
  Object.keys(FAM).forEach(f=>{const its=(byF[f]||[]).sort((a,b)=>(+b.userData.wg_val)-(+a.userData.wg_val));if(!its.length)return;const sum=its.reduce((s,o)=>s+(+o.userData.wg_val||0),0);
   const g=document.createElement('div');g.innerHTML='<div class="gh"><span class="sw" style="background:'+FAM[f][1]+'"></span>'+FAM[f][0]+'<b>'+fmt(sum)+'</b></div>';
-  const ghEl=g.firstElementChild;ghEl.title='Edit mode: click to select all '+FAM[f][0].toLowerCase()+' (shift-click adds another group)';ghEl.onclick=(ev)=>{if(!editMode)return;ev.stopPropagation();if(!ev.shiftKey)clearSel();its.forEach(o=>{if(!sel.has(o)){sel.add(o);addBox(o);}});setHint('Selected '+sel.size+' holdings — drag / arrows to move · [ ] rotate');};
+  const ghEl=g.firstElementChild;ghEl.title='Edit mode: click to select all '+FAM[f][0].toLowerCase()+' (shift-click adds another group)';ghEl.onclick=(ev)=>{if(!editMode)return;ev.stopPropagation();if(!ev.shiftKey)clearSel();its.forEach(o=>{if(!sel.has(o)){sel.add(o);addBox(o);}});updateSizeSlider();setHint('Selected '+sel.size+' holdings — drag / arrows to move · [ ] rotate');};
   its.forEach(o=>{const d=o.userData.day||0;const r=document.createElement('div');r.className='row';r.innerHTML='<span>'+o.userData.wg_name+'</span><span class="v">'+fmt(+o.userData.wg_val)+'<span class="d '+(d>=0?'up':'down')+'">'+(d>=0?'+':'')+d.toFixed(1)+'%</span></span>';
    r.onmouseenter=()=>{hoverObj=o;};r.onmouseleave=()=>{hoverObj=null;hideCard();};r.onclick=()=>{if(editMode)selectOnly(o);else focusOn(o);};g.appendChild(r);});
   lb.appendChild(g);});}
@@ -263,12 +303,15 @@ function showCard(o,x,y){const f=o.userData.wg_fam||'alts',d=o.userData.day||0,y
 function hideCard(){card.classList.remove('show');}
 // editor state
 let editMode=false,drawMode=false;const sel=new Set(),boxes=new Map();let dragging=false,dragAnchor=null,moved=false;
+let statueTemplate=null,addedStatues=[];
+function makeStatue(name){if(!statueTemplate)return null;const c=statueTemplate.clone(true);c.name='AddedStatue';c.userData={wg_name:name,wg_fam:'collectable',wg_val:0,beta:0.4,seed:hh(name),yield:0,day:0,_mats:[],_fol:[]};statueTemplate.parent.add(c);c.userData.divScale=c.scale.clone();holds.push(c);return c;}
+function updateSizeSlider(){const el=document.getElementById('tSize');if(!el)return;if(editMode&&sel.size===1){el.style.display='inline-flex';const o=[...sel][0];document.getElementById('sizeR').value=o.userData.scaleMul||1;}else el.style.display='none';}
 let zonePts=[],zoneLine=null,zoneMarks=[];
 function addBox(o){const b=new T.BoxHelper(o,0xffd86b);scene.add(b);boxes.set(o,b);}
 function rmBox(o){const b=boxes.get(o);if(b){scene.remove(b);boxes.delete(o);}}
-function clearSel(){[...sel].forEach(o=>rmBox(o));sel.clear();}
-function selectOnly(o){clearSel();sel.add(o);addBox(o);focusOn(o);}
-function toggleSel(o,add){if(!add)clearSel();if(sel.has(o)){sel.delete(o);rmBox(o);}else{sel.add(o);addBox(o);}}
+function clearSel(){[...sel].forEach(o=>rmBox(o));sel.clear();updateSizeSlider();}
+function selectOnly(o){clearSel();sel.add(o);addBox(o);focusOn(o);updateSizeSlider();}
+function toggleSel(o,add){if(!add)clearSel();if(sel.has(o)){sel.delete(o);rmBox(o);}else{sel.add(o);addBox(o);}updateSizeSlider();}
 function clearZone(){zonePts=[];if(zoneLine){scene.remove(zoneLine);zoneLine=null;}zoneMarks.forEach(m=>scene.remove(m));zoneMarks=[];}
 function addZonePt(p){zonePts.push(p.clone());const s=new T.Mesh(new T.SphereGeometry(.5,10,10),new T.MeshBasicMaterial({color:0xffd86b}));s.position.copy(p);s.position.y=topY+.4;scene.add(s);zoneMarks.push(s);
  if(zoneLine)scene.remove(zoneLine);if(zonePts.length>=2){const pts=zonePts.map(q=>new T.Vector3(q.x,topY+.4,q.z));pts.push(pts[0].clone());zoneLine=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xffd86b}));scene.add(zoneLine);}}
@@ -278,7 +321,7 @@ function fillZone(){if(zonePts.length<3||sel.size===0){setHint('Draw a zone (3+ 
  const items=[...sel];const placed=[];const mind=3.2;let idx=0;
  for(const o of items){let done=false;for(let tr=0;tr<400&&!done;tr++){const x=minx+Math.random()*(maxx-minx),z=minz+Math.random()*(maxz-minz);if(!pip(x,z,zonePts))continue;if(placed.some(q=>(q.x-x)**2+(q.z-z)**2<mind*mind))continue;o.position.x=x;o.position.z=z;if(ROTOK[o.userData.wg_fam])o.rotation.y=Math.random()*6.28;placed.push({x,z});done=true;}}
  items.forEach(snapBase);saveLayout();buildList();setHint('Filled zone with '+items.length+' holdings');clearZone();}
-function saveLayout(){const o={};holds.forEach(h=>o[h.userData.wg_name]=[+h.position.x.toFixed(2),+h.position.y.toFixed(2),+h.position.z.toFixed(2),+h.rotation.y.toFixed(3)]);try{localStorage.setItem('wg_layout3',JSON.stringify(o));}catch(e){}return o;}
+function saveLayout(){const o={};holds.forEach(h=>o[h.userData.wg_name]=[+h.position.x.toFixed(2),+h.position.y.toFixed(2),+h.position.z.toFixed(2),+h.rotation.y.toFixed(3),+(h.userData.scaleMul||1).toFixed(3)]);try{localStorage.setItem('wg_layout3',JSON.stringify(o));}catch(e){}return o;}
 function setHint(t){document.getElementById('hint').innerHTML=t;}
 // pointer handling
 let downXY=null;
@@ -295,8 +338,10 @@ addEventListener('pointerup',e=>{if(dragging){dragging=false;controls.enabled=tr
  if(!editMode&&downXY&&Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1])<5){const o=pickHold(e.clientX,e.clientY);if(o)focusOn(o);else{focusTarget=null;controls.autoRotate=!REDUCED;}}});
 // toolbar
 const tE=document.getElementById('tEdit');
-function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset'].forEach(id=>document.getElementById(id).style.display=v?'':'none');document.getElementById('tClip').style.display=v?'inline-flex':'none';}
+function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset','tAddStatue'].forEach(id=>document.getElementById(id).style.display=v?'':'none');document.getElementById('tClip').style.display=v?'inline-flex':'none';updateSizeSlider();}
 {const cr=document.getElementById('clipR');cr.value=CLIPR;cr.addEventListener('input',()=>setClip(parseFloat(cr.value)));}
+{const sr=document.getElementById('sizeR');sr.addEventListener('input',()=>{if(sel.size!==1)return;const o=[...sel][0];const mul=parseFloat(sr.value);o.scale.copy(o.userData.divScale||o.scale).multiplyScalar(mul);o.userData.scaleMul=mul;snapBase(o);const b=boxes.get(o);if(b)b.update();saveLayout();});}
+document.getElementById('tAddStatue').onclick=()=>{const nm='Statue '+(addedStatues.length+2);addedStatues.push(nm);try{localStorage.setItem('wg_statues',JSON.stringify(addedStatues));}catch(e){}const s=makeStatue(nm);if(s){s.userData.divScale=s.scale.clone();s.userData.scaleMul=1;s.position.set(controls.target.x,0,controls.target.z);s.rotation.y=Math.random()*6.28;snapBase(s);selectOnly(s);saveLayout();buildList();setHint('Added a statue — drag to place, use Size to scale');}};
 tE.onclick=()=>{editMode=!editMode;tE.classList.toggle('on',editMode);showEditTools(editMode);controls.autoRotate=editMode?false:!REDUCED;hideCard();if(!editMode){clearSel();clearZone();drawMode=false;document.getElementById('tZone').classList.remove('on');setHint('<b>Drag</b> orbit · <b>click</b> a holding to focus');}else setHint('<b>Click</b> a holding or a <b>list group header</b> to select all of a type · <b>drag</b>/<b>arrows</b> move · <b>[ ]</b> rotate · <b>Draw zone</b> → <b>Fill</b>');};
 document.getElementById('tZone').onclick=(ev)=>{drawMode=!drawMode;ev.target.classList.toggle('on',drawMode);if(drawMode){clearZone();setHint('Click points on the ground to outline a zone, then Fill');}};
 document.getElementById('tFill').onclick=fillZone;
