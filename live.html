@@ -43,6 +43,7 @@
 <div id="card"></div>
 <div id="exp"><div class="box"><h3>Layout export</h3><p>Copied to your clipboard. Paste this to me and I'll bake it in as the permanent layout. It's also saved in this browser.</p><textarea id="expT" readonly></textarea><div class="r"><button id="expClose">Close</button></div></div></div>
 <div class="hint" id="hint"><b>Drag</b> orbit · <b>scroll</b> zoom · <b>click</b> a holding to focus</div>
+<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 7 · diversified</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -56,6 +57,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script>
+console.log('%cWealth Isle — build 7 (diversified assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
 const T=THREE;const MOBILE=innerWidth<720||('ontouchstart'in window&&innerWidth<900);
 const FAM={stock:['Stocks','#3a9a3a'],bond:['Bonds','#1baf7a'],metal:['Metals','#eda100'],energy:['Energy','#eb6834'],crypto:['Crypto','#f0902a'],realestate:['Real estate','#8a63c9'],cash:['Cash','#2a78d6'],collectable:['Collectables','#e87ba4'],alts:['Alternatives','#e87ba4']};
 const BETA={stock:1.1,bond:0.3,metal:0.7,energy:1.4,crypto:2.0,cash:0.04,realestate:0.9,collectable:0.4,alts:1.1};
