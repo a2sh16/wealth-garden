@@ -43,7 +43,7 @@
 <div id="card"></div>
 <div id="exp"><div class="box"><h3>Layout export</h3><p>Copied to your clipboard. Paste this to me and I'll bake it in as the permanent layout. It's also saved in this browser.</p><textarea id="expT" readonly></textarea><div class="r"><button id="expClose">Close</button></div></div></div>
 <div class="hint" id="hint"><b>Drag</b> orbit · <b>scroll</b> zoom · <b>click</b> a holding to focus</div>
-<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 7 · diversified</div>
+<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 8 · upright fix</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -57,7 +57,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script>
-console.log('%cWealth Isle — build 7 (diversified assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
+console.log('%cWealth Isle — build 8 (upright fix assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
 const T=THREE;const MOBILE=innerWidth<720||('ontouchstart'in window&&innerWidth<900);
 const FAM={stock:['Stocks','#3a9a3a'],bond:['Bonds','#1baf7a'],metal:['Metals','#eda100'],energy:['Energy','#eb6834'],crypto:['Crypto','#f0902a'],realestate:['Real estate','#8a63c9'],cash:['Cash','#2a78d6'],collectable:['Collectables','#e87ba4'],alts:['Alternatives','#e87ba4']};
 const BETA={stock:1.1,bond:0.3,metal:0.7,energy:1.4,crypto:2.0,cash:0.04,realestate:0.9,collectable:0.4,alts:1.1};
@@ -205,14 +205,14 @@ let _diversified=false;
 function diversify(){if(_diversified)return;_diversified=true;
   // BARRELS — vary shape (non-uniform scale), rotation, colour
   const bg=[];islandRoot.traverse(o=>{if(/^Barrel\d+$/.test(o.name||''))bg.push(o);});
-  bg.forEach(b=>{const s=hh(b.name);b.scale.multiply(new T.Vector3(0.82+s*0.42,0.78+jr(b.name,'h')*0.7,0.82+jr(b.name,'d')*0.42));b.rotation.y=s*6.283;const col=BARRELC[Math.floor(jr(b.name,'c')*BARRELC.length)];b.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();k.material.color.setHex(col);}});});
+  bg.forEach(b=>{const s=hh(b.name);b.scale.multiplyScalar(0.78+s*0.5);const col=BARRELC[Math.floor(jr(b.name,'c')*BARRELC.length)];b.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();k.material.color.setHex(col);}});});
   // ROCKS — vary shape + rotation
-  holds.filter(h=>h.userData.wg_fam==='metal').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiply(new T.Vector3(0.8+s*0.45,0.85+jr(o.userData.wg_name,'h')*0.5,0.8+jr(o.userData.wg_name,'d')*0.45));o.rotation.y=s*6.283;});
+  holds.filter(h=>h.userData.wg_fam==='metal').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiplyScalar(0.78+s*0.5);o.rotateOnWorldAxis(WORLDUP,s*6.283);});
   // ORES — colour per metal + vary size (+ uranium glow)
   islandRoot.traverse(o=>{if(o.isMesh&&o.material&&/Ore/i.test(o.material.name||'')){let p=o;while(p&&!p.userData.wg_name)p=p.parent;const nm=p&&p.userData.wg_name;const col=OREC[nm]||0xE0C060;o.material=o.material.clone();o.material.color.setHex(col);o.material.metalness=0.5;o.material.roughness=0.45;if(nm==='Uranium'){o.material.emissive=new T.Color(0x2f9f2f);o.material.emissiveIntensity=0.7;}o.scale.multiplyScalar(0.72+hh((o.name||'')+nm)*0.7);
     if(p){o.visible=true;p.updateWorldMatrix(true,true);const bb=new T.Box3().setFromObject(p);const cc=bb.getCenter(new T.Vector3());const topW=new T.Vector3(cc.x+(hh(nm+'ox')-.5)*bb.getSize(new T.Vector3()).x*0.3, bb.max.y-0.3, cc.z+(hh(nm+'oz')-.5)*bb.getSize(new T.Vector3()).z*0.3);o.position.copy(p.worldToLocal(topW));}}});
   // BUSHES — vary shape + green variety
-  holds.filter(h=>h.userData.wg_fam==='bond').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiply(new T.Vector3(0.8+s*0.5,0.8+jr(o.userData.wg_name,'h')*0.55,0.8+jr(o.userData.wg_name,'d')*0.5));o.rotation.y=s*6.283;const tc=new T.Color(BUSHC[Math.floor(jr(o.userData.wg_name,'c')*BUSHC.length)]);o.userData._fol.forEach(fl=>{fl.o.copy(tc);fl.m.color.copy(tc);});});
+  holds.filter(h=>h.userData.wg_fam==='bond').forEach(o=>{const s=hh(o.userData.wg_name);o.scale.multiplyScalar(0.78+s*0.55);o.rotateOnWorldAxis(WORLDUP,s*6.283);const tc=new T.Color(BUSHC[Math.floor(jr(o.userData.wg_name,'c')*BUSHC.length)]);o.userData._fol.forEach(fl=>{fl.o.copy(tc);fl.m.color.copy(tc);});});
   // COINS — 4 majors + generic (crypto) and a cash coin
   holds.filter(h=>h.userData.wg_fam==='crypto'||h.userData.wg_fam==='cash').forEach(o=>{const cash=o.userData.wg_fam==='cash';const st=cash?['$',0x3fa34d]:(COIN[o.userData.wg_name]||['⬢',0x9aa7b4]);o.traverse(k=>{if(k.isMesh&&k.material&&k.material.color){k.material=k.material.clone();k.material.color.setHex(st[1]);k.material.metalness=0.65;k.material.roughness=0.32;}});emblemOn(o,st[0],st[1]);});
   // FOREX — replace the windmill with a currency-pair marker
@@ -265,8 +265,8 @@ loader.load('island.glb',(gltf)=>{
 function applyLayout(){let base=null;try{base=window.__BAKED||null;}catch(e){}
   let saved=null;try{saved=JSON.parse(localStorage.getItem('wg_layout3')||'null');}catch(e){}
   const L=saved||base;
-  if(L){holds.forEach(o=>{const p=L[o.userData.wg_name];if(p){o.position.set(p[0],p[1],p[2]);if(p[3]!=null)o.rotation.y=p[3];o.userData.savedMul=(p[4]&&p[4]>0)?p[4]:1;}});}
-  else{holds.forEach(o=>{if(o.userData.wg_fam==='crypto')return;o.position.x+=(hh(o.userData.wg_name+'jx')-.5)*2.4;o.position.z+=(hh(o.userData.wg_name+'jz')-.5)*2.4;if(ROTOK[o.userData.wg_fam])o.rotation.y=hh(o.userData.wg_name+'jr')*6.28;});}
+  if(L){holds.forEach(o=>{const p=L[o.userData.wg_name];if(p){o.position.set(p[0],p[1],p[2]);if(p[3]!=null&&!TILTED[o.userData.wg_fam])o.rotation.y=p[3];o.userData.savedMul=(p[4]&&p[4]>0)?p[4]:1;}});}
+  else{holds.forEach(o=>{if(o.userData.wg_fam==='crypto')return;o.position.x+=(hh(o.userData.wg_name+'jx')-.5)*2.4;o.position.z+=(hh(o.userData.wg_name+'jz')-.5)*2.4;if(ROTOK[o.userData.wg_fam])o.rotateOnWorldAxis(WORLDUP,hh(o.userData.wg_name+'jr')*6.28);});}
 }
 fetch('layout.json').then(r=>r.ok?r.json():null).then(j=>{if(j){window.__BAKED=j;if(holds.length)applyLayout();}}).catch(()=>{});
 
@@ -299,6 +299,8 @@ let focusTarget=null;
 const gplane=new T.Plane(new T.Vector3(0,1,0),0);
 function pickHold(x,y){mv.x=x/innerWidth*2-1;mv.y=-(y/innerHeight)*2+1;ray.setFromCamera(mv,camera);const src=islandRoot||scene;const hit=ray.intersectObject(src,true);if(hit.length){let o=hit[0].object;while(o&&!o.userData.wg_name)o=o.parent;return o||null;}return null;}
 const ROTOK={stock:1,bond:1,energy:1};
+const WORLDUP=new T.Vector3(0,1,0);
+const TILTED={metal:1,bond:1,energy:1};// baked -90deg X rotation -> spin around world up, don't set rotation.y
 function groundHit(x,y){mv.x=x/innerWidth*2-1;mv.y=-(y/innerHeight)*2+1;ray.setFromCamera(mv,camera);gplane.constant=-topY;const p=new T.Vector3();ray.ray.intersectPlane(gplane,p);return p;}
 function focusOn(o){const p=new T.Vector3();new T.Box3().setFromObject(o).getCenter(p);focusTarget=p.clone();controls.autoRotate=false;}
 function showCard(o,x,y){const f=o.userData.wg_fam||'alts',d=o.userData.day||0,yd=o.userData.yield||0;card.innerHTML='<div class="cn">'+o.userData.wg_name+'</div><div class="cf" style="color:'+(FAM[f]?FAM[f][1]:'#ccc')+'">'+(FAM[f]?FAM[f][0]:f)+'</div><div class="cg"><div><div class="l">Value</div><div class="cv">'+fmt(+o.userData.wg_val)+'</div></div><div><div class="l">Today</div><div class="cv '+(d>=0?'up':'down')+'">'+(d>=0?'▲ +':'▼ ')+d.toFixed(2)+'%</div></div>'+(yd>0?'<div><div class="l">Yield</div><div class="cv">'+yd+'%</div></div>':'')+'</div>';card.style.left=Math.min(x+14,innerWidth-172)+'px';card.style.top=Math.max(8,y-8)+'px';card.classList.add('show');}
@@ -321,7 +323,7 @@ function pip(x,z,pts){let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++)
 function fillZone(){if(zonePts.length<3||sel.size===0){setHint('Draw a zone (3+ points) and select holdings first');return;}
  const xs=zonePts.map(p=>p.x),zs=zonePts.map(p=>p.z);const minx=Math.min(...xs),maxx=Math.max(...xs),minz=Math.min(...zs),maxz=Math.max(...zs);
  const items=[...sel];const placed=[];const mind=3.2;let idx=0;
- for(const o of items){let done=false;for(let tr=0;tr<400&&!done;tr++){const x=minx+Math.random()*(maxx-minx),z=minz+Math.random()*(maxz-minz);if(!pip(x,z,zonePts))continue;if(placed.some(q=>(q.x-x)**2+(q.z-z)**2<mind*mind))continue;o.position.x=x;o.position.z=z;if(ROTOK[o.userData.wg_fam])o.rotation.y=Math.random()*6.28;placed.push({x,z});done=true;}}
+ for(const o of items){let done=false;for(let tr=0;tr<400&&!done;tr++){const x=minx+Math.random()*(maxx-minx),z=minz+Math.random()*(maxz-minz);if(!pip(x,z,zonePts))continue;if(placed.some(q=>(q.x-x)**2+(q.z-z)**2<mind*mind))continue;o.position.x=x;o.position.z=z;if(ROTOK[o.userData.wg_fam])o.rotateOnWorldAxis(WORLDUP,Math.random()*6.28);placed.push({x,z});done=true;}}
  items.forEach(snapBase);saveLayout();buildList();setHint('Filled zone with '+items.length+' holdings');clearZone();}
 function saveLayout(){const o={};holds.forEach(h=>o[h.userData.wg_name]=[+h.position.x.toFixed(2),+h.position.y.toFixed(2),+h.position.z.toFixed(2),+h.rotation.y.toFixed(3),+(h.userData.scaleMul||1).toFixed(3)]);try{localStorage.setItem('wg_layout3',JSON.stringify(o));}catch(e){}return o;}
 function setHint(t){document.getElementById('hint').innerHTML=t;}
@@ -343,14 +345,14 @@ const tE=document.getElementById('tEdit');
 function showEditTools(v){['tZone','tFill','tClear','tSave','tExport','tReset','tAddStatue'].forEach(id=>document.getElementById(id).style.display=v?'':'none');document.getElementById('tClip').style.display=v?'inline-flex':'none';updateSizeSlider();}
 {const cr=document.getElementById('clipR');cr.value=CLIPR;cr.addEventListener('input',()=>setClip(parseFloat(cr.value)));}
 {const sr=document.getElementById('sizeR');sr.addEventListener('input',()=>{if(sel.size!==1)return;const o=[...sel][0];const mul=parseFloat(sr.value);o.scale.copy(o.userData.divScale||o.scale).multiplyScalar(mul);o.userData.scaleMul=mul;snapBase(o);const b=boxes.get(o);if(b)b.update();saveLayout();});}
-document.getElementById('tAddStatue').onclick=()=>{const nm='Statue '+(addedStatues.length+2);addedStatues.push(nm);try{localStorage.setItem('wg_statues',JSON.stringify(addedStatues));}catch(e){}const s=makeStatue(nm);if(s){s.userData.divScale=s.scale.clone();s.userData.scaleMul=1;s.position.set(controls.target.x,0,controls.target.z);s.rotation.y=Math.random()*6.28;snapBase(s);selectOnly(s);saveLayout();buildList();setHint('Added a statue — drag to place, use Size to scale');}};
+document.getElementById('tAddStatue').onclick=()=>{const nm='Statue '+(addedStatues.length+2);addedStatues.push(nm);try{localStorage.setItem('wg_statues',JSON.stringify(addedStatues));}catch(e){}const s=makeStatue(nm);if(s){s.userData.divScale=s.scale.clone();s.userData.scaleMul=1;s.position.set(controls.target.x,0,controls.target.z);s.rotateOnWorldAxis(WORLDUP,Math.random()*6.28);snapBase(s);selectOnly(s);saveLayout();buildList();setHint('Added a statue — drag to place, use Size to scale');}};
 tE.onclick=()=>{editMode=!editMode;tE.classList.toggle('on',editMode);showEditTools(editMode);controls.autoRotate=editMode?false:!REDUCED;hideCard();if(!editMode){clearSel();clearZone();drawMode=false;document.getElementById('tZone').classList.remove('on');setHint('<b>Drag</b> orbit · <b>click</b> a holding to focus');}else setHint('<b>Click</b> a holding or a <b>list group header</b> to select all of a type · <b>drag</b>/<b>arrows</b> move · <b>[ ]</b> rotate · <b>Draw zone</b> → <b>Fill</b>');};
 document.getElementById('tZone').onclick=(ev)=>{drawMode=!drawMode;ev.target.classList.toggle('on',drawMode);if(drawMode){clearZone();setHint('Click points on the ground to outline a zone, then Fill');}};
 document.getElementById('tFill').onclick=fillZone;
 document.getElementById('tClear').onclick=()=>{clearZone();setHint('Zone cleared');};
 document.getElementById('tSave').onclick=()=>{saveLayout();setHint('Layout saved in this browser');};
 document.getElementById('tReset').onclick=()=>{try{localStorage.removeItem('wg_layout3');localStorage.removeItem('wg_layout');}catch(e){}location.reload();};
-addEventListener('keydown',e=>{if(!editMode||!sel.size)return;if(/^(input|textarea)$/i.test((e.target.tagName||'')))return;const s=e.shiftKey?2:0.5;let dx=0,dz=0,dr=0;switch(e.key){case'ArrowLeft':dx=-s;break;case'ArrowRight':dx=s;break;case'ArrowUp':dz=-s;break;case'ArrowDown':dz=s;break;case'[':dr=-0.13;break;case']':dr=0.13;break;case'{':dr=-0.03;break;case'}':dr=0.03;break;default:return;}e.preventDefault();sel.forEach(o=>{o.position.x+=dx;o.position.z+=dz;o.rotation.y+=dr;});if(dx||dz)sel.forEach(snapBase);saveLayout();});
+addEventListener('keydown',e=>{if(!editMode||!sel.size)return;if(/^(input|textarea)$/i.test((e.target.tagName||'')))return;const s=e.shiftKey?2:0.5;let dx=0,dz=0,dr=0;switch(e.key){case'ArrowLeft':dx=-s;break;case'ArrowRight':dx=s;break;case'ArrowUp':dz=-s;break;case'ArrowDown':dz=s;break;case'[':dr=-0.13;break;case']':dr=0.13;break;case'{':dr=-0.03;break;case'}':dr=0.03;break;default:return;}e.preventDefault();sel.forEach(o=>{o.position.x+=dx;o.position.z+=dz;if(dr)o.rotateOnWorldAxis(WORLDUP,dr);});if(dx||dz)sel.forEach(snapBase);saveLayout();});
 document.getElementById('tExport').onclick=()=>{const o=saveLayout();const txt=JSON.stringify(o);const ta=document.getElementById('expT');ta.value=txt;document.getElementById('exp').classList.add('show');try{navigator.clipboard.writeText(txt);}catch(e){}};
 document.getElementById('expClose').onclick=()=>document.getElementById('exp').classList.remove('show');
 
