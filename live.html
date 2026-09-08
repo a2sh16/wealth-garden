@@ -4,7 +4,14 @@
 :root{--ink:#eef1e8;--dim:#9aa593;--gold:#d8b566;--panel:rgba(12,18,14,.74);--line:rgba(255,255,255,.10);--up:#2a78d6;--down:#eda100}
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#0b1017;color:var(--ink);font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
 #c{position:fixed;inset:0;display:block;touch-action:none}
-#load{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:#0d1219;color:var(--dim);font-size:13px}#load.hide{opacity:0;pointer-events:none;transition:opacity .6s}
+#load{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:#0d1219 center/cover no-repeat;color:#fff;font-size:13px}#load.hide{opacity:0;pointer-events:none;transition:opacity .8s}
+#load::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(6,10,16,.86),rgba(6,10,16,.05) 52%,rgba(6,10,16,.30))}
+#load .ld{position:relative;text-align:center;padding-bottom:13vh}
+#load .ld .t{font-family:Georgia,serif;font-size:clamp(26px,5vw,46px);font-weight:600;text-shadow:0 2px 24px rgba(0,0,0,.55)}
+#load .ld .s{margin-top:9px;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+#load .ld .bar{margin:14px auto 0;width:140px;height:2px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
+#load .ld .bar i{display:block;height:100%;width:40%;background:var(--gold);border-radius:2px;animation:ld 1.1s ease-in-out infinite}
+@keyframes ld{0%{margin-left:-40%}100%{margin-left:100%}}
 .brand{position:fixed;top:16px;left:20px;z-index:6;pointer-events:none}
 .brand .k{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);font-weight:600}
 .brand h1{margin:5px 0 0;font-family:Georgia,serif;font-weight:600;font-size:clamp(19px,2.8vw,28px)}
@@ -39,7 +46,7 @@
 @media(max-width:720px){.list,#testpanel{display:none}}
 </style>
 <canvas id="c"></canvas>
-<div id="load">shaping the isle…</div>
+<div id="load" style="background-image:url('tex/hero.webp')"><div class="ld"><div class="t">The Wealth Isle</div><div class="s">shaping your garden</div><div class="bar"><i></i></div></div></div>
 <div class="brand"><div class="k">AlphaPipeline · Wealth Garden</div><h1>The Wealth Isle</h1>
  <div class="nw"><div><div class="l">Net worth</div><div class="v" id="nw">—</div></div><div><div class="l">Today</div><div class="v" id="today">—</div></div><div><div class="l">Holdings</div><div class="v" id="hc">—</div></div></div></div>
 <div class="bar">
@@ -59,7 +66,7 @@
 <div id="card"></div>
 <div id="exp"><div class="box"><h3>Layout export</h3><p>Copied to your clipboard. Paste this to me and I'll bake it in as the permanent layout. It's also saved in this browser.</p><textarea id="expT" readonly></textarea><div class="r"><button id="expClose">Close</button></div></div></div>
 <div class="hint" id="hint"><b>Drag</b> orbit · <b>scroll</b> zoom · <b>click</b> a holding to focus</div>
-<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 9 · test panel</div>
+<div style="position:fixed;bottom:5px;right:9px;z-index:6;color:var(--dim);font-size:9px;opacity:.55;pointer-events:none">build 10 · higgsfield art</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -73,7 +80,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script>
-console.log('%cWealth Isle — build 9 (test panel + upright assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
+console.log('%cWealth Isle — build 10 (higgsfield hero+clouds, test panel assets, forex marker, resize/add-statue)','color:#d8b566;font-weight:bold');
 const T=THREE;const MOBILE=innerWidth<720||('ontouchstart'in window&&innerWidth<900);
 const FAM={stock:['Stocks','#3a9a3a'],bond:['Bonds','#1baf7a'],metal:['Metals','#eda100'],energy:['Energy','#eb6834'],crypto:['Crypto','#f0902a'],realestate:['Real estate','#8a63c9'],cash:['Cash','#2a78d6'],collectable:['Collectables','#e87ba4'],alts:['Alternatives','#e87ba4']};
 const BETA={stock:1.1,bond:0.3,metal:0.7,energy:1.4,crypto:2.0,cash:0.04,realestate:0.9,collectable:0.4,alts:1.1};
@@ -94,8 +101,8 @@ const skyU={top:{value:new T.Color(0x3f7fc4)},bot:{value:new T.Color(0xeaf3fb)}}
 scene.add(new T.Mesh(new T.SphereGeometry(1200,32,16),new T.ShaderMaterial({side:T.BackSide,uniforms:skyU,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*.5+.5;gl_FragColor=vec4(mix(bot,top,clamp(h,0.,1.)),1.);}'})));
 const hemi=new T.HemisphereLight(0xbfd8ff,0x55704a,0.7);scene.add(hemi);
 const sun=new T.DirectionalLight(0xfff2d6,2.7);sun.position.set(-40,58,26);sun.castShadow=true;sun.shadow.mapSize.set(MOBILE?1024:2048,MOBILE?1024:2048);sun.shadow.camera.near=1;sun.shadow.camera.far=260;sun.shadow.camera.left=-80;sun.shadow.camera.right=80;sun.shadow.camera.top=80;sun.shadow.camera.bottom=-80;sun.shadow.bias=-0.0004;scene.add(sun);
-const cloudMat=new T.MeshStandardMaterial({color:0xffffff,roughness:1,transparent:true,opacity:.92});
-const clouds=[];for(let i=0;i<(MOBILE?40:70);i++){const g=new T.Group();const n=2+((Math.random()*3)|0);for(let j=0;j<n;j++){const b=new T.Mesh(new T.SphereGeometry(3+Math.random()*3,8,6),cloudMat);b.position.set((Math.random()-.5)*10,(Math.random()-.5)*2,(Math.random()-.5)*6);b.scale.y=.6;g.add(b);}const a=Math.random()*6.28,r=34+Math.random()*110;g.position.set(Math.cos(a)*r,-26-Math.random()*10,Math.sin(a)*r);g.userData.sp=.3+Math.random()*.6;clouds.push(g);scene.add(g);}
+const cloudTex=new T.TextureLoader().load('tex/cloud.png');
+const clouds=[];const CN=MOBILE?26:50;for(let i=0;i<CN;i++){const low=Math.random()<0.72;const s=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:low?0.98:0.85}));const a=Math.random()*6.28,r=38+Math.random()*130;const sc=(low?16:11)+Math.random()*(low?26:16);s.scale.set(sc,sc*0.6,1);s.position.set(Math.cos(a)*r,(low?-24-Math.random()*16:2+Math.random()*22),Math.sin(a)*r);s.userData.sp=.25+Math.random()*.55;s.userData.r=r;s.userData.a=a;clouds.push(s);scene.add(s);}
 const birds=[];const bm=new T.MeshBasicMaterial({color:0x33424c,side:T.DoubleSide});
 const bgeo=new T.BufferGeometry();bgeo.setAttribute('position',new T.Float32BufferAttribute([-1,0,0, -0.12,0.05,0, 0,0.22,0,   1,0,0, 0,0.22,0, 0.12,0.05,0],3));bgeo.computeVertexNormals();
 for(let i=0;i<6;i++){const ln=new T.Mesh(bgeo,bm);ln.userData={a:Math.random()*6.28,r:44+Math.random()*44,h:26+Math.random()*16,sp:.12+Math.random()*.16,ph:Math.random()*6};ln.scale.setScalar(1.0+Math.random()*0.5);birds.push(ln);scene.add(ln);}
@@ -404,7 +411,7 @@ function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta
   for(const c of coins)c.o.rotation.y+=(0.4+c.beta*1.1)*dt*(0.5+VOL*0.8);
   if(payParts.length){for(let i=payParts.length-1;i>=0;i--){const p=payParts[i];p.vy-=dt*7;p.m.position.y+=p.vy*dt;p.life-=dt;p.m.material.opacity=Math.max(0,Math.min(1,p.life));if(p.life<=0){scene.remove(p.m);p.m.geometry.dispose();p.m.material.dispose();payParts.splice(i,1);}}}
   if(islandRoot&&!editMode)islandRoot.position.y=Math.sin(t*.5)*.5;
-  clouds.forEach(c=>{c.position.x+=c.userData.sp*dt*(.5+waterU.flow.value*.4);if(c.position.x>140)c.position.x=-140;});
+  clouds.forEach(c=>{c.userData.a+=c.userData.sp*dt*0.03*(.6+waterU.flow.value*.3);c.position.x=Math.cos(c.userData.a)*c.userData.r;c.position.z=Math.sin(c.userData.a)*c.userData.r;});
   birds.forEach(b=>{const u=b.userData;u.a+=u.sp*dt;b.position.set(Math.cos(u.a)*u.r,u.h+Math.sin(t*2+u.ph)*1.5,Math.sin(u.a)*u.r);b.rotation.y=-u.a+Math.PI/2;b.rotation.z=Math.sin(t*10+u.ph)*.3;});
   dripT+=dt;if(dripT>.12/Math.max(0.3,VOL)){dripT=0;emitDrip();}const arr=drips.geometry.attributes.position.array;for(let i=0;i<DN;i++){const s=dstate[i];if(s.life>0){s.vy-=dt*9;s.y+=s.vy*dt;s.life-=dt;arr[i*3]=s.x;arr[i*3+1]=s.y;arr[i*3+2]=s.z;if(s.life<=0||s.y<-24)arr[i*3+1]=-999;}else arr[i*3+1]=-999;}drips.geometry.attributes.position.needsUpdate=true;}
  if(editMode)boxes.forEach(b=>b.update());
