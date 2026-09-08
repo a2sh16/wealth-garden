@@ -1,0 +1,16 @@
+<title>3D asset viewer</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#e9e2d6;overflow:hidden;font-family:system-ui}#c{display:block}#t{position:fixed;top:12px;left:14px;color:#6a5a48;font:600 13px Georgia}</style>
+<canvas id="c"></canvas><div id="t">TripoSR tree — drag to orbit</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const T=THREE,r=new T.WebGLRenderer({canvas:c,antialias:true});r.setPixelRatio(devicePixelRatio);r.setSize(innerWidth,innerHeight);r.outputEncoding=T.sRGBEncoding;
+const sc=new T.Scene();sc.background=new T.Color(0xe9e2d6);
+const cam=new T.PerspectiveCamera(45,innerWidth/innerHeight,0.01,100);cam.position.set(2.2,1.6,2.2);
+const ctl=new T.OrbitControls(cam,c);ctl.enableDamping=true;ctl.autoRotate=true;ctl.autoRotateSpeed=1.2;
+sc.add(new T.HemisphereLight(0xffffff,0x8a7a66,1.1));const d=new T.DirectionalLight(0xfff0d8,1.6);d.position.set(3,5,2);sc.add(d);
+new T.GLTFLoader().load('tree_tsr.glb',g=>{const o=g.scene;const b=new T.Box3().setFromObject(o);const s=1.8/Math.max(...b.getSize(new T.Vector3()).toArray());o.scale.setScalar(s);const b2=new T.Box3().setFromObject(o);o.position.sub(b2.getCenter(new T.Vector3()));o.traverse(m=>{if(m.isMesh&&m.material){m.material.vertexColors=true;m.material.roughness=0.9;m.material.metalness=0;}});sc.add(o);ctl.target.set(0,0,0);});
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();r.setSize(innerWidth,innerHeight);});
+(function a(){requestAnimationFrame(a);ctl.update();r.render(sc,cam);})();
+</script>
