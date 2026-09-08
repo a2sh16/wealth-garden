@@ -1,0 +1,169 @@
+<title>The Wealth Isle</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--gold:#d8b566}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#e9e2d6;font-family:'Hanken Grotesk',system-ui,sans-serif}
+#c{position:fixed;inset:0;display:block;touch-action:none}
+#load{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:#0d1219 center/cover no-repeat;color:#fff}#load.hide{opacity:0;pointer-events:none;transition:.8s}
+#load::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(6,10,16,.86),rgba(6,10,16,.05) 52%,rgba(6,10,16,.3))}
+#load .ld{position:relative;text-align:center;padding-bottom:13vh}#load .t{font-family:Georgia,serif;font-weight:600;font-size:clamp(26px,5vw,46px);text-shadow:0 2px 24px rgba(0,0,0,.55)}
+#load .s{margin-top:9px;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+#load .bar{margin:14px auto 0;width:160px;height:2px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden}#load .bar i{display:block;height:100%;background:var(--gold);width:20%;transition:width .3s}
+.brand{position:fixed;top:16px;left:20px;z-index:6;pointer-events:none;color:#5f5140}.brand .k{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#c79a56;font-weight:700}.brand h1{margin:4px 0 0;font-family:Georgia,serif;font-weight:600;font-size:clamp(19px,2.8vw,28px)}
+.bar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:7;display:flex;gap:4px;background:rgba(20,26,20,.62);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:4px;backdrop-filter:blur(8px)}
+.bar button{font:inherit;font-size:11.5px;font-weight:600;border:0;background:transparent;color:#d8cdbb;padding:6px 11px;border-radius:999px;cursor:pointer}.bar button.on{background:#fff;color:#b06a2c}
+#card{position:fixed;z-index:8;pointer-events:none;opacity:0;transition:.1s;background:rgba(20,26,20,.72);border:1px solid var(--gold);border-radius:10px;padding:8px 11px;backdrop-filter:blur(10px);color:#fff;min-width:140px}#card.show{opacity:1}
+#card .cn{font-family:Georgia,serif;font-weight:600;font-size:14px}#card .cv{font-family:ui-monospace,monospace;font-size:12px;color:#e7dcc8;margin-top:3px}
+.hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;color:#7a6b58;font-size:12px;background:rgba(255,255,255,.5);padding:6px 12px;border-radius:20px}
+.stamp{position:fixed;bottom:5px;right:9px;z-index:6;color:#9a8f7a;font-size:9px;opacity:.6}
+</style>
+<canvas id="c"></canvas>
+<div id="load" style="background-image:url('tex/hero.webp')"><div class="ld"><div class="t">The Wealth Isle</div><div class="s">growing your garden</div><div class="bar"><i id="ldbar"></i></div></div></div>
+<div class="brand"><div class="k">AlphaPipeline · Wealth Garden</div><h1>The Wealth Isle</h1></div>
+<div class="bar" id="market"></div>
+<div id="card"></div>
+<div class="hint" id="hint"><b>drag</b> orbit · <b>scroll</b> zoom · <b>click</b> a holding</div>
+<div class="stamp">3d build 1</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
+<script>
+const T=THREE, MOBILE=innerWidth<720;
+const renderer=new T.WebGLRenderer({canvas:c,antialias:!MOBILE});renderer.setPixelRatio(Math.min(MOBILE?1.5:2,devicePixelRatio||1));
+renderer.outputEncoding=T.LinearEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+const scene=new T.Scene();scene.fog=new T.FogExp2(0xffe7cf,0.0016);
+const camera=new T.PerspectiveCamera(46,innerWidth/innerHeight,0.1,3000);camera.position.set(40,26,40);
+const controls=new T.OrbitControls(camera,c);controls.enableDamping=true;controls.dampingFactor=0.06;controls.autoRotate=true;controls.autoRotateSpeed=0.35;controls.minDistance=12;controls.maxDistance=140;controls.maxPolarAngle=Math.PI*0.52;controls.target.set(0,3,0);
+// sky
+const skyU={top:{value:new T.Color(0xaec4e6)},bot:{value:new T.Color(0xffe7cf)}};
+scene.add(new T.Mesh(new T.SphereGeometry(1000,32,16),new T.ShaderMaterial({side:T.BackSide,uniforms:skyU,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*.5+.5;gl_FragColor=vec4(mix(bot,top,clamp(h,0.,1.)),1.);}'})));
+// lights (match the asset render lighting)
+const hemi=new T.HemisphereLight(0xffe1c4,0x6b5747,0.55);scene.add(hemi);
+const sun=new T.DirectionalLight(0xffe6c0,2.4);sun.position.set(-34,44,26);sun.castShadow=true;sun.shadow.mapSize.set(MOBILE?1024:2048,MOBILE?1024:2048);sun.shadow.camera.near=1;sun.shadow.camera.far=200;sun.shadow.camera.left=-50;sun.shadow.camera.right=50;sun.shadow.camera.top=50;sun.shadow.camera.bottom=-50;sun.shadow.bias=-0.0005;scene.add(sun);
+const fill=new T.DirectionalLight(0xbcd0ff,0.55);fill.position.set(30,20,-24);scene.add(fill);
+// island base (procedural pastel)
+const R=30;
+const deck=new T.Mesh(new T.CylinderGeometry(R,R,2.4,56),new T.MeshStandardMaterial({color:0xaecb86,roughness:1}));deck.position.y=-1.2;deck.receiveShadow=true;scene.add(deck);
+const cliff=new T.Mesh(new T.ConeGeometry(R*0.98,30,12),new T.MeshStandardMaterial({color:0xe0c3a8,roughness:1,flatShading:true}));cliff.position.y=-17;scene.add(cliff);
+// river ribbon (curved) using a simple flat mesh
+(function(){const pts=[[-3,20],[-1,10],[-3,0],[-1,-10],[2,-20]];const g=new T.BufferGeometry();const v=[],idx=[];const w=4;
+ for(let i=0;i<pts.length;i++){const [x,y]=pts[i];let dx,dy;if(i<pts.length-1){dx=pts[i+1][0]-x;dy=pts[i+1][1]-y;}else{dx=x-pts[i-1][0];dy=y-pts[i-1][1];}const L=Math.hypot(dx,dy)||1;const nx=-dy/L,ny=dx/L;v.push(x+nx*w,0.06,y+ny*w, x-nx*w,0.06,y-ny*w);}
+ for(let i=0;i<pts.length-1;i++){const a=i*2;idx.push(a,a+1,a+3,a,a+3,a+2);}
+ g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();
+ const wu={t:{value:0}};const m=new T.ShaderMaterial({transparent:true,uniforms:wu,vertexShader:'varying vec3 wp;void main(){wp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float t;varying vec3 wp;void main(){float w=sin(wp.x*.6+t*1.4)*.5+sin(wp.z*.8-t*1.1)*.5;vec3 c=mix(vec3(0.14,0.55,0.62),vec3(0.45,0.82,0.85),clamp(w*.5+.5,0.,1.));float sp=smoothstep(.8,1.,sin(wp.x*2.5+t*2.)*sin(wp.z*2.7-t*1.7));c+=sp*.35;gl_FragColor=vec4(c,.92);}'});
+ const mesh=new T.Mesh(g,m);scene.add(mesh);window._wu=wu;})();
+// clouds
+const cloudTex=new T.TextureLoader().load('tex/cloud.png');window._clouds=[];
+for(let i=0;i<40;i++){const low=Math.random()<0.7;const s=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:low?.96:.8}));const a=Math.random()*6.28,r=44+Math.random()*90;const sc=(low?16:11)+Math.random()*20;s.scale.set(sc,sc*.6,1);s.position.set(Math.cos(a)*r,(low?-20-Math.random()*14:6+Math.random()*18),Math.sin(a)*r);s.userData={a,r,sp:.2+Math.random()*.4};window._clouds.push(s);scene.add(s);}
+// ---------- asset library + placement ----------
+const draco=new T.DRACOLoader();draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
+const gltf=new T.GLTFLoader();gltf.setDRACOLoader(draco);
+const CAT={
+ stock:['coral_tree','teal_pine','pink_blossom','tree_lavender','tree_mint','tree_cream','tree_cherry','tree_oak','tree_autumn','tree_birch','tree_palm','tree_bonsai','tree_spruce','tree_peach','tree_willow','tree_cypress'],
+ bond:['bush','hedge','bush_flower','bush_berry'],
+ metal:['rock_gold','rock_copper','rock_silver','ore_mound','rock','boulder_stack'],
+ gem:['crystal','crystal_pink','crystal_gold','geode'],
+ realestate:['house','cottage','mansion','tower','skyscraper','barn'],
+ cash:['vault','chest','coin_stack','piggybank'],
+ crypto:['coin','coin_btc','coin_eth'],
+ energy:['windmill','oil_derrick','barrels','wheat'],
+ collectable:['statue','obelisk','gazebo','art_easel','fountain']
+};
+const cache={}; // name -> promise of template Group (base at y=0)
+function loadAsset(name){
+  if(cache[name])return cache[name];
+  cache[name]=new Promise(res=>{
+    gltf.load('models3d/'+name+'.glb',g=>{
+      const root=g.scene; const box=new T.Box3().setFromObject(root); const sz=box.getSize(new T.Vector3());
+      const s=1/Math.max(sz.x,sz.y,sz.z); root.scale.setScalar(s); // normalize to ~1 unit tall
+      const b2=new T.Box3().setFromObject(root); root.position.y-=b2.min.y; root.position.x-=(b2.min.x+b2.max.x)/2; root.position.z-=(b2.min.z+b2.max.z)/2;
+      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;const m=o.material;if(m){m.vertexColors=true;m.roughness=0.9;m.metalness=0;if(!m.color)m.color=new T.Color(0xffffff);else m.color.set(0xffffff);}}});
+      res(root);
+    },undefined,()=>res(null));
+  });
+  return cache[name];
+}
+const holds=[]; // living instances
+function surfaceY(x,z){ // island top ~0; river band lower - approximate flat 0
+  return 0;
+}
+async function place(name, x, z, height, cat, data){
+  const tmpl=await loadAsset(name); if(!tmpl)return null;
+  const inst=tmpl.clone(true);
+  inst.traverse(o=>{if(o.isMesh){o.material=o.material.clone();}}); // own materials for glow/tint
+  const grp=new T.Group(); grp.add(inst); inst.scale.setScalar(height); // height in world units
+  grp.position.set(x, surfaceY(x,z), z); grp.rotation.y=Math.random()*6.28;
+  grp.userData={cat,data:data||{},ph:Math.random()*6.28,sp:0.7+Math.random()*0.7,flex:cat==='stock'||cat==='bond'?1:(cat==='realestate'||cat==='metal'?0.15:0.5),
+    sway:0,swayV:0,baseY:0,glow:0,mats:[],name};
+  inst.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){grp.userData.mats.push(o.material);}});
+  scene.add(grp); holds.push(grp); return grp;
+}
+// demo distribution (visuals-first): forest right, village left, massif back, coins float
+async function populate(){
+  const bar=document.getElementById('ldbar'); let done=0,total=64;
+  const tick=()=>{done++;bar.style.width=Math.min(100,done/total*100)+'%';};
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const onLand=(x,z)=>Math.hypot(x,z)<R-3 && Math.abs(x - (-2 + z*0.05))>5; // avoid rough river band
+  // forest (stocks) right & scattered
+  for(let i=0;i<26;i++){let x,z,tr=0;do{x=rnd(-24,24);z=rnd(-24,24);tr++;}while((!onLand(x,z))&&tr<40);const n=CAT.stock[i%CAT.stock.length];await place(n,x,z,rnd(3,5.5),'stock',{name:n,val:rnd(1,50)});tick();}
+  // bonds
+  for(let i=0;i<8;i++){const x=rnd(-22,-8),z=rnd(-16,-6);await place(CAT.bond[i%CAT.bond.length],x,z,rnd(1.4,2.2),'bond');tick();}
+  // village (real estate + cash) left
+  const vil=[['mansion',-15,3,7],['house',-11,7,5],['house',-9,1,4.5],['cottage',-14,-3,5],['tower',-18,0,8],['vault',-12,-7,5],['chest',-9,-9,2.5]];
+  for(const [n,x,z,h] of vil){await place(n,x,z,h,n==='vault'||n==='chest'?'cash':'realestate');tick();}
+  // massif (metals + gems) back
+  const back=[['rock_gold',10,16,4],['rock_silver',15,14,3.5],['rock_copper',6,18,3.5],['crystal',13,17,2.5],['crystal_pink',9,15,2.2],['ore_mound',17,12,2.5]];
+  for(const [n,x,z,h] of back){await place(n,x,z,h,n.startsWith('crystal')||n==='geode'?'gem':'metal');tick();}
+  // energy + collectables front-right
+  const misc=[['windmill',18,-6,6],['oil_derrick',20,-10,5],['statue',-4,10,4],['fountain',-6,6,3],['obelisk',22,4,5]];
+  for(const [n,x,z,h] of misc){await place(n,x,z,h,'collectable');tick();}
+  // floating crypto coins over the river
+  for(const [n,x,z] of [['coin_btc',-2,-2],['coin_eth',0,-6],['coin',2,-12]]){const g=await place(n,x,z,2.2,'crypto');if(g){g.userData.baseY=4.5;g.position.y=4.5;}tick();}
+  const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',800);
+}
+populate();
+// ---------- market + behaviors ----------
+let market='fair';const MK={rally:2.2,fair:0.5,flat:0,bear:-1.6,crash:-3.2};
+const mbar=document.getElementById('market');
+['rally','fair','flat','bear','crash'].forEach(m=>{const b=document.createElement('button');b.textContent=m[0].toUpperCase()+m.slice(1);b.className=m==='fair'?'on':'';b.onclick=()=>{market=m;[...mbar.children].forEach(c=>c.classList.toggle('on',c===b));};mbar.appendChild(b);});
+// news glow demo: press G to glow a random holding
+addEventListener('keydown',e=>{if(e.key==='g'&&holds.length){const h=holds[(Math.random()*holds.length)|0];h.userData.glow=1;}});
+// click focus + card
+const ray=new T.Raycaster(),mv=new T.Vector2(),card=document.getElementById('card');let hover=null;
+addEventListener('pointermove',e=>{mv.x=e.clientX/innerWidth*2-1;mv.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(mv,camera);const hit=ray.intersectObjects(holds,true);if(hit.length){let o=hit[0].object;while(o&&!o.userData.cat)o=o.parent;hover=o;if(o){card.innerHTML='<div class="cn">'+(o.userData.name||o.userData.cat)+'</div><div class="cv">'+o.userData.cat+'</div>';card.style.left=Math.min(e.clientX+14,innerWidth-160)+'px';card.style.top=(e.clientY-8)+'px';card.classList.add('show');}}else{hover=null;card.classList.remove('show');}});
+addEventListener('click',()=>{if(hover){const p=new T.Vector3();new T.Box3().setFromObject(hover).getCenter(p);controls.target.lerp(p,0.6);controls.autoRotate=false;}});
+// post
+const composer=new T.EffectComposer(renderer);composer.addPass(new T.RenderPass(scene,camera));let bloom=null;if(!MOBILE){bloom=new T.UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),0.12,0.6,0.9);composer.addPass(bloom);}composer.addPass(new T.ShaderPass(T.GammaCorrectionShader));const fxaa=new T.ShaderPass(T.FXAAShader);composer.addPass(fxaa);
+function sz(){const w=innerWidth,h=innerHeight,pr=renderer.getPixelRatio();renderer.setSize(w,h);composer.setSize(w,h);if(bloom)bloom.setSize(w,h);if(fxaa.material)fxaa.material.uniforms.resolution.value.set(1/(w*pr),1/(h*pr));camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',sz);sz();
+const clock=new T.Clock();let lastAz=0,spin=0;
+function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime;controls.update();window._wu&&(window._wu.t.value=t);
+ const az=controls.getAzimuthalAngle();let daz=az-lastAz;if(daz>Math.PI)daz-=6.283;if(daz<-Math.PI)daz+=6.283;lastAz=az;spin+=((-daz*10)-spin)*Math.min(1,dt*6);
+ const mv=MK[market];const gust=Math.sin(t*.5)*.5+.5;const bad=mv<0?Math.min(1,-mv/3):0;
+ for(const h of holds){const u=h.userData;
+  // spring sway (physics): target lean from wind + spin inertia + market shake
+  let target=(Math.sin(t*(0.6+u.sp)+u.ph)*0.05*(0.6+gust))*u.flex + spin*u.flex*0.14;
+  if(bad>0)target+=Math.sin(t*22+u.ph)*0.06*bad*u.flex; // shake on bad market
+  u.swayV+=((target-u.sway)*40 - u.swayV*7)*dt; u.sway+=u.swayV*dt; h.rotation.z=u.sway;
+  // breathe / bubble (squash-stretch from base)
+  const br=Math.sin(t*(0.8+u.sp*0.5)+u.ph);
+  h.scale.set(1-0.03*br, 1+0.05*br, 1-0.03*br);
+  // bob
+  h.position.y=u.baseY + (u.cat==='crypto'?Math.sin(t*1.2+u.ph)*0.5:Math.abs(br)*0.06);
+  if(u.cat==='crypto')h.rotation.y+=dt*1.2;
+  // glow (news) decay + emissive pulse + gain/loss tint
+  if(u.glow>0){u.glow=Math.max(0,u.glow-dt*0.4);const g=u.glow*(0.5+0.5*Math.sin(t*8));u.mats.forEach(m=>{m.emissive.setRGB(1,0.8,0.3);m.emissiveIntensity=g*0.9;});}
+ }
+ (window._clouds||[]).forEach(c=>{c.userData.a+=c.userData.sp*dt*0.03;c.position.x=Math.cos(c.userData.a)*c.userData.r;c.position.z=Math.sin(c.userData.a)*c.userData.r;});
+ if(hover){const p=new T.Vector3();new T.Box3().setFromObject(hover).getCenter(p);}
+ composer.render();}
+anim();
+</script>
