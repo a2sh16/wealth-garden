@@ -40,8 +40,8 @@ const T=THREE, MOBILE=innerWidth<720;
 const renderer=new T.WebGLRenderer({canvas:c,antialias:!MOBILE});renderer.setPixelRatio(Math.min(MOBILE?1.5:2,devicePixelRatio||1));
 renderer.outputEncoding=T.LinearEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
 const scene=new T.Scene();scene.fog=new T.FogExp2(0xffe7cf,0.0016);
-const camera=new T.PerspectiveCamera(46,innerWidth/innerHeight,0.1,3000);camera.position.set(40,26,40);
-const controls=new T.OrbitControls(camera,c);controls.enableDamping=true;controls.dampingFactor=0.06;controls.autoRotate=true;controls.autoRotateSpeed=0.35;controls.minDistance=12;controls.maxDistance=140;controls.maxPolarAngle=Math.PI*0.52;controls.target.set(0,3,0);
+const camera=new T.PerspectiveCamera(44,innerWidth/innerHeight,0.1,3000);camera.position.set(40,30,46);
+const controls=new T.OrbitControls(camera,c);controls.enableDamping=true;controls.dampingFactor=0.06;controls.autoRotate=true;controls.autoRotateSpeed=0.3;controls.minDistance=12;controls.maxDistance=150;controls.maxPolarAngle=Math.PI*0.53;controls.target.set(0,5,4);
 // sky
 const skyU={top:{value:new T.Color(0xaec4e6)},bot:{value:new T.Color(0xffe7cf)}};
 scene.add(new T.Mesh(new T.SphereGeometry(1000,32,16),new T.ShaderMaterial({side:T.BackSide,uniforms:skyU,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*.5+.5;gl_FragColor=vec4(mix(bot,top,clamp(h,0.,1.)),1.);}'})));
@@ -50,16 +50,31 @@ const hemi=new T.HemisphereLight(0xffe1c4,0x6b5747,0.55);scene.add(hemi);
 const sun=new T.DirectionalLight(0xffe6c0,2.4);sun.position.set(-34,44,26);sun.castShadow=true;sun.shadow.mapSize.set(MOBILE?1024:2048,MOBILE?1024:2048);sun.shadow.camera.near=1;sun.shadow.camera.far=200;sun.shadow.camera.left=-50;sun.shadow.camera.right=50;sun.shadow.camera.top=50;sun.shadow.camera.bottom=-50;sun.shadow.bias=-0.0005;scene.add(sun);
 const fill=new T.DirectionalLight(0xbcd0ff,0.55);fill.position.set(30,20,-24);scene.add(fill);
 // island base (procedural pastel)
-const R=30;
-const deck=new T.Mesh(new T.CylinderGeometry(R,R,2.4,56),new T.MeshStandardMaterial({color:0xaecb86,roughness:1}));deck.position.y=-1.2;deck.receiveShadow=true;scene.add(deck);
-const cliff=new T.Mesh(new T.ConeGeometry(R*0.98,30,12),new T.MeshStandardMaterial({color:0xe0c3a8,roughness:1,flatShading:true}));cliff.position.y=-17;scene.add(cliff);
-// river ribbon (curved) using a simple flat mesh
-(function(){const pts=[[-3,20],[-1,10],[-3,0],[-1,-10],[2,-20]];const g=new T.BufferGeometry();const v=[],idx=[];const w=4;
- for(let i=0;i<pts.length;i++){const [x,y]=pts[i];let dx,dy;if(i<pts.length-1){dx=pts[i+1][0]-x;dy=pts[i+1][1]-y;}else{dx=x-pts[i-1][0];dy=y-pts[i-1][1];}const L=Math.hypot(dx,dy)||1;const nx=-dy/L,ny=dx/L;v.push(x+nx*w,0.06,y+ny*w, x-nx*w,0.06,y-ny*w);}
+const R=32;
+// low ground disc (grass) + cliff underside
+const deck=new T.Mesh(new T.CylinderGeometry(R,R*0.86,2.6,64),new T.MeshStandardMaterial({color:0xafce87,roughness:1,flatShading:true}));deck.position.y=-1.3;deck.receiveShadow=true;scene.add(deck);
+const cliff=new T.Mesh(new T.ConeGeometry(R*0.95,36,14),new T.MeshStandardMaterial({color:0xe7c3a4,roughness:1,flatShading:true}));cliff.position.y=-20;scene.add(cliff);
+// raised back plateau (tier) where the mountain + upper village sit
+const PX=-10,PZ=-12,PR=13;
+const plat=new T.Mesh(new T.CylinderGeometry(PR,PR+2,3.2,44),new T.MeshStandardMaterial({color:0xb7d38f,roughness:1,flatShading:true}));plat.position.set(PX,1.5,PZ);plat.receiveShadow=true;plat.castShadow=true;scene.add(plat);
+// mountain massif (rock) on the plateau: stacked cones for a craggy pink peak
+const m1=new T.Mesh(new T.ConeGeometry(10,15,9),new T.MeshStandardMaterial({color:0xd7a9a6,roughness:1,flatShading:true}));m1.position.set(PX,3+7.5,PZ-1);m1.castShadow=true;m1.receiveShadow=true;scene.add(m1);
+const m2=new T.Mesh(new T.ConeGeometry(6,9,8),new T.MeshStandardMaterial({color:0xe6c0bb,roughness:1,flatShading:true}));m2.position.set(PX+3,3+9,PZ-3);m2.castShadow=true;scene.add(m2);
+// ---- water: one shader that flows along the mesh's local +Y (river & vertical falls) ----
+const waterMats=[];
+function waterMat(){const u={t:{value:0}};waterMats.push(u);return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,uniforms:u,
+  vertexShader:'varying vec2 vu;void main(){vu=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform float t;varying vec2 vu;void main(){float f=vu.y;float streak=smoothstep(.72,1.,sin(vu.x*20.+sin(vu.y*7.)*1.6)*.5+.5);float flow=fract(f*2.2-t*.9);vec3 base=mix(vec3(.15,.55,.63),vec3(.52,.86,.89),f);base+=streak*.22+(flow>.72?.16:0.);gl_FragColor=vec4(base,.93);}'});}
+function fall(x,y,z,w,h,ry){const m=new T.Mesh(new T.PlaneGeometry(w,h),waterMat());m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);return m;}
+fall(PX+1,3+5,PZ+4.4,4,13,0);     // waterfall down the mountain face
+fall(9,-15,27,7,32,0);            // front-edge waterfall where the river leaves the island
+fall(-27,-15,-1,6,30,Math.PI/2);  // left promontory waterfall
+// river ribbon (curved) following the terrain height, from mountain base to front edge
+(function(){const pts=[[-3,-6],[0,2],[3,10],[6,18],[9,26]];const g=new T.BufferGeometry();const v=[],idx=[],uv=[];const w=5.2;
+ for(let i=0;i<pts.length;i++){const [x,z]=pts[i];let dx,dz;if(i<pts.length-1){dx=pts[i+1][0]-x;dz=pts[i+1][1]-z;}else{dx=x-pts[i-1][0];dz=z-pts[i-1][1];}const L=Math.hypot(dx,dz)||1;const nx=-dz/L,nz=dx/L;const y=surfaceY(x,z)+0.14;v.push(x+nx*w,y,z+nz*w, x-nx*w,y,z-nz*w);const f=i/(pts.length-1);uv.push(0,f,1,f);}
  for(let i=0;i<pts.length-1;i++){const a=i*2;idx.push(a,a+1,a+3,a,a+3,a+2);}
- g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();
- const wu={t:{value:0}};const m=new T.ShaderMaterial({transparent:true,uniforms:wu,vertexShader:'varying vec3 wp;void main(){wp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float t;varying vec3 wp;void main(){float w=sin(wp.x*.6+t*1.4)*.5+sin(wp.z*.8-t*1.1)*.5;vec3 c=mix(vec3(0.14,0.55,0.62),vec3(0.45,0.82,0.85),clamp(w*.5+.5,0.,1.));float sp=smoothstep(.8,1.,sin(wp.x*2.5+t*2.)*sin(wp.z*2.7-t*1.7));c+=sp*.35;gl_FragColor=vec4(c,.92);}'});
- const mesh=new T.Mesh(g,m);scene.add(mesh);window._wu=wu;})();
+ g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+ scene.add(new T.Mesh(g,waterMat()));})();
 // clouds
 const cloudTex=new T.TextureLoader().load('tex/cloud.png');window._clouds=[];
 for(let i=0;i<40;i++){const low=Math.random()<0.7;const s=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:low?.96:.8}));const a=Math.random()*6.28,r=44+Math.random()*90;const sc=(low?16:11)+Math.random()*20;s.scale.set(sc,sc*.6,1);s.position.set(Math.cos(a)*r,(low?-20-Math.random()*14:6+Math.random()*18),Math.sin(a)*r);s.userData={a,r,sp:.2+Math.random()*.4};window._clouds.push(s);scene.add(s);}
@@ -92,7 +107,9 @@ function loadAsset(name){
   return cache[name];
 }
 const holds=[]; // living instances
-function surfaceY(x,z){ // island top ~0; river band lower - approximate flat 0
+function surfaceY(x,z){ // terrain height: plateau at back, mound islet in river, else flat 0
+  const id=Math.hypot(x-5,z-14); if(id<4.5) return 1.3*(1-id/4.5); // river islet mound
+  const pd=Math.hypot(x-PX,z-PZ); if(pd<PR-2) return 3.0; if(pd<PR+1) return 3.0*(PR+1-pd)/3.0; // raised plateau
   return 0;
 }
 async function place(name, x, z, height, cat, data){
@@ -102,31 +119,46 @@ async function place(name, x, z, height, cat, data){
   const grp=new T.Group(); grp.add(inst); inst.scale.setScalar(height); // height in world units
   grp.position.set(x, surfaceY(x,z), z); grp.rotation.y=Math.random()*6.28;
   grp.userData={cat,data:data||{},ph:Math.random()*6.28,sp:0.7+Math.random()*0.7,flex:cat==='stock'||cat==='bond'?1:(cat==='realestate'||cat==='metal'?0.15:0.5),
-    sway:0,swayV:0,baseY:0,glow:0,mats:[],name};
+    sway:0,swayV:0,baseY:surfaceY(x,z),glow:0,mats:[],name};
   inst.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){grp.userData.mats.push(o.material);}});
   scene.add(grp); holds.push(grp); return grp;
 }
-// demo distribution (visuals-first): forest right, village left, massif back, coins float
+// composed distribution matching the hero art: mountain+river center, dense groves on banks,
+// village nestled in trees, crystals on peak & promontories, coins floating over the mountain.
 async function populate(){
-  const bar=document.getElementById('ldbar'); let done=0,total=64;
+  const bar=document.getElementById('ldbar'); let done=0,total=72;
   const tick=()=>{done++;bar.style.width=Math.min(100,done/total*100)+'%';};
   const rnd=(a,b)=>a+Math.random()*(b-a);
-  const onLand=(x,z)=>Math.hypot(x,z)<R-3 && Math.abs(x - (-2 + z*0.05))>5; // avoid rough river band
-  // forest (stocks) right & scattered
-  for(let i=0;i<26;i++){let x,z,tr=0;do{x=rnd(-24,24);z=rnd(-24,24);tr++;}while((!onLand(x,z))&&tr<40);const n=CAT.stock[i%CAT.stock.length];await place(n,x,z,rnd(3,5.5),'stock',{name:n,val:rnd(1,50)});tick();}
-  // bonds
-  for(let i=0;i<8;i++){const x=rnd(-22,-8),z=rnd(-16,-6);await place(CAT.bond[i%CAT.bond.length],x,z,rnd(1.4,2.2),'bond');tick();}
-  // village (real estate + cash) left
-  const vil=[['mansion',-15,3,7],['house',-11,7,5],['house',-9,1,4.5],['cottage',-14,-3,5],['tower',-18,0,8],['vault',-12,-7,5],['chest',-9,-9,2.5]];
-  for(const [n,x,z,h] of vil){await place(n,x,z,h,n==='vault'||n==='chest'?'cash':'realestate');tick();}
-  // massif (metals + gems) back
-  const back=[['rock_gold',10,16,4],['rock_silver',15,14,3.5],['rock_copper',6,18,3.5],['crystal',13,17,2.5],['crystal_pink',9,15,2.2],['ore_mound',17,12,2.5]];
-  for(const [n,x,z,h] of back){await place(n,x,z,h,n.startsWith('crystal')||n==='geode'?'gem':'metal');tick();}
-  // energy + collectables front-right
-  const misc=[['windmill',18,-6,6],['oil_derrick',20,-10,5],['statue',-4,10,4],['fountain',-6,6,3],['obelisk',22,4,5]];
-  for(const [n,x,z,h] of misc){await place(n,x,z,h,'collectable');tick();}
-  // floating crypto coins over the river
-  for(const [n,x,z] of [['coin_btc',-2,-2],['coin_eth',0,-6],['coin',2,-12]]){const g=await place(n,x,z,2.2,'crypto');if(g){g.userData.baseY=4.5;g.position.y=4.5;}tick();}
+  const CONE=['teal_pine','tree_cypress','tree_spruce','pink_blossom','coral_tree','tree_cherry','tree_peach','tree_lavender','tree_mint'];
+  const floatAt=async(n,x,z,h,y,cat)=>{const g=await place(n,x,z,h,cat||'crypto');if(g){g.userData.baseY=y;g.position.y=y;}tick();return g;};
+  // dense grove: tight cluster of colorful conifers around a center
+  async function grove(cx,cz,rad,n,hmin,hmax){for(let i=0;i<n;i++){const a=Math.random()*6.28,d=Math.sqrt(Math.random())*rad;const x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;const nm=CONE[(Math.random()*CONE.length)|0];await place(nm,x,z,rnd(hmin,hmax),'stock',{name:nm,val:rnd(1,50)});tick();}}
+  async function houses(list){for(const [n,x,z,h] of list){await place(n,x,z,h,'realestate');tick();}}
+  // ---- groves on the banks & lower slopes (dense, saturated) ----
+  await grove(-17,3,5,7,3,5); await grove(-20,-4,4,5,3,4.6); await grove(-13,9,3.5,4,2.6,4);
+  await grove(16,9,5,7,3,5);  await grove(20,1,4,5,3,4.6);   await grove(14,18,3.5,4,2.6,4.2);
+  await grove(-3,-4,4,5,3,4.6); // front slope of the massif
+  // bonds = bushes/hedges dotting the bank paths
+  for(let i=0;i<8;i++){const b=CAT.bond[i%CAT.bond.length];await place(b,rnd(-2,10),rnd(4,22),rnd(1.3,2),'bond');tick();}
+  // ---- village nestled in the left grove, upper village on the plateau front, right hamlet ----
+  await houses([['cottage',-14,6,4.5],['house',-11,4,4],['house',-16,8,3.8]]);
+  await houses([['mansion',-6,-7,6],['tower',-2,-9,7]]);
+  await houses([['house',17,12,4],['cottage',20,14,4]]);
+  await place('vault',-9,3,4,'cash');tick(); await place('chest',-12,10,2.4,'cash');tick(); await place('piggybank',19,16,2,'cash');tick();
+  // ---- mountain crown: crystals perched on the peak + coins floating above ----
+  await floatAt('crystal',PX,PZ-1,3,15,'gem'); await floatAt('crystal_gold',PX+3,PZ-3,2.4,16,'gem');
+  await floatAt('coin_btc',PX,PZ,2.2,22); await floatAt('coin',PX+4,PZ+1,1.8,20);
+  // ---- crystals on the rocky promontories at the rim ----
+  await place('crystal',-25,4,3,'gem');tick(); await place('crystal_pink',24,-3,3,'gem');tick(); await place('crystal_gold',22,20,2.6,'gem');tick(); await place('geode',-24,-8,2.4,'gem');tick();
+  // ---- metals/ore at the mountain base ----
+  await place('rock_gold',-6,-15,3.5,'metal');tick(); await place('ore_mound',-1,-15,2.6,'metal');tick(); await place('boulder_stack',-15,-14,3.2,'metal');tick();
+  // ---- energy + collectables on the open front-right ----
+  await place('windmill',25,8,6,'energy');tick(); await place('oil_derrick',27,2,5,'energy');tick();
+  await place('statue',-3,21,4,'collectable');tick(); await place('fountain',12,-1,3,'collectable');tick(); await place('obelisk',-20,-11,5,'collectable');tick();
+  // ---- tree-covered islet in the river ----
+  await grove(5,14,2.2,4,2.4,3.6);
+  // ---- crypto floating low over the river, off the main sightline ----
+  await floatAt('coin_eth',9,19,1.6,3.4); await floatAt('coin_btc',-3,9,1.6,3.6);
   const ld=document.getElementById('load');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',800);
 }
 populate();
@@ -145,7 +177,7 @@ const composer=new T.EffectComposer(renderer);composer.addPass(new T.RenderPass(
 function sz(){const w=innerWidth,h=innerHeight,pr=renderer.getPixelRatio();renderer.setSize(w,h);composer.setSize(w,h);if(bloom)bloom.setSize(w,h);if(fxaa.material)fxaa.material.uniforms.resolution.value.set(1/(w*pr),1/(h*pr));camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',sz);sz();
 const clock=new T.Clock();let lastAz=0,spin=0;
-function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime;controls.update();window._wu&&(window._wu.t.value=t);
+function anim(){requestAnimationFrame(anim);const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime;controls.update();for(const u of waterMats)u.t.value=t;
  const az=controls.getAzimuthalAngle();let daz=az-lastAz;if(daz>Math.PI)daz-=6.283;if(daz<-Math.PI)daz+=6.283;lastAz=az;spin+=((-daz*10)-spin)*Math.min(1,dt*6);
  const mv=MK[market];const gust=Math.sin(t*.5)*.5+.5;const bad=mv<0?Math.min(1,-mv/3):0;
  for(const h of holds){const u=h.userData;
